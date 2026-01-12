@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    sendEmailVerification
+    sendEmailVerification,
+    signOut
 } from "firebase/auth";
 import { auth } from '../lib/firebase';
 import { sendLoginAlert } from '../lib/email';
