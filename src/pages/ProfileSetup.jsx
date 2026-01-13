@@ -34,9 +34,13 @@ export default function ProfileSetup() {
                 photoURL = await getDownloadURL(storageRef);
             }
 
+            // Generate username from email
+            const username = auth.currentUser.email.split('@')[0];
+
             await setDoc(doc(db, 'users', auth.currentUser.uid), {
                 uid: auth.currentUser.uid,
                 email: auth.currentUser.email,
+                username, // Save username
                 displayName,
                 bio,
                 photoURL,
@@ -89,6 +93,13 @@ export default function ProfileSetup() {
                             placeholder="e.g. John Doe"
                             required
                         />
+                    </div>
+
+                    {/* Username Preview */}
+                    <div className="bg-gray-700/50 p-4 rounded-xl border border-gray-600/50">
+                        <label className="block text-gray-400 text-sm mb-1">Your Username</label>
+                        <p className="text-purple-400 font-mono">@{auth.currentUser?.email?.split('@')[0]}</p>
+                        <p className="text-xs text-gray-500 mt-1">People can search for you using this username.</p>
                     </div>
 
                     <div>

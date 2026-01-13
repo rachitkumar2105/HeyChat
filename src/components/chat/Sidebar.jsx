@@ -34,7 +34,8 @@ export default function Sidebar({ onSelectChat, selectedChat }) {
     }, [currentUser]);
 
     const filteredUsers = users.filter(user =>
-        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
+        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.username?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleLogout = () => {
@@ -58,6 +59,7 @@ export default function Sidebar({ onSelectChat, selectedChat }) {
                     </button>
                 </div>
             </div>
+
 
             {/* Search */}
             <div className="p-4">
@@ -90,8 +92,8 @@ export default function Sidebar({ onSelectChat, selectedChat }) {
                             key={user.id}
                             onClick={() => onSelectChat(user)}
                             className={`flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all ${selectedChat?.id === user.id
-                                    ? 'bg-purple-600/20 border border-purple-500/50'
-                                    : 'hover:bg-gray-800 border border-transparent'
+                                ? 'bg-purple-600/20 border border-purple-500/50'
+                                : 'hover:bg-gray-800 border border-transparent'
                                 }`}
                         >
                             <div className="relative">
@@ -108,12 +110,13 @@ export default function Sidebar({ onSelectChat, selectedChat }) {
 
                             <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-gray-200 truncate">{user.displayName}</h3>
+                                <p className="text-xs text-purple-400 font-medium">@{user.username || user.email?.split('@')[0]}</p>
                                 <p className="text-sm text-gray-500 truncate">{user.bio || "Available"}</p>
                             </div>
                         </div>
                     ))
                 )}
             </div>
-        </div>
+        </div >
     );
 }

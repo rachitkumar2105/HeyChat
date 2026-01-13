@@ -53,7 +53,17 @@ export default function Auth() {
                 setIsLogin(true); // Switch to login view
             }
         } catch (err) {
-            setError(err.message);
+            console.error("Auth Error:", err);
+            if (err.code === 'auth/configuration-not-found') {
+                setError("Email/Password login is not enabled in Firebase Authentication. Please enable it in the Firebase Console.");
+            } else if (err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
+                setError("Invalid email or password.");
+            } else if (err.code === 'auth/email-already-in-use') {
+                setError("Email is already registered.");
+            } else {
+                // Remove "Firebase: Error (" from the message for cleaner UI
+                setError(err.message.replace('Firebase: Error (', '').replace(').', ''));
+            }
         } finally {
             setLoading(false);
         }
