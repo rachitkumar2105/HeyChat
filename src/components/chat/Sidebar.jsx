@@ -28,6 +28,9 @@ export default function Sidebar({ onSelectChat, selectedChat }) {
             }));
             setUsers(usersList);
             setLoading(false);
+        }, (error) => {
+            console.error("Error fetching users:", error);
+            setLoading(false);
         });
 
         return () => unsubscribe();

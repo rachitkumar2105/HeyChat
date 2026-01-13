@@ -23,9 +23,19 @@ if (typeof window !== 'undefined') {
     analytics = getAnalytics(app);
 }
 
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+
 // Export services for the app to use
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Use initializeFirestore with forceLongPolling AND persistence to avoid "offline" errors
+export const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+    localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+        cacheSizeBytes: "unlimited"
+    })
+});
 export const storage = getStorage(app);
 
 console.log("🔥 Firebase initialized:", app.name);
