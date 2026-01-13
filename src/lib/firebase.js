@@ -17,7 +17,11 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+let analytics;
+if (typeof window !== 'undefined') {
+    analytics = getAnalytics(app);
+}
 
 // Export services for the app to use
 export const auth = getAuth(app);

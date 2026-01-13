@@ -5,7 +5,8 @@ import {
     sendEmailVerification,
     signOut
 } from "firebase/auth";
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { sendLoginAlert } from '../lib/email';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,9 +43,18 @@ export default function Auth() {
                     setLoading(false);
                     return;
                 }
+
+                // Check if user profile exists
+                const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+
                 // Send login alert (non-blocking)
                 sendLoginAlert(email, "User");
-                navigate('/dashboard');
+
+                if (userDoc.exists()) {
+                    navigate('/dashboard');
+                } else {
+                    navigate('/profile-setup');
+                }
             } else {
                 // Signup Logic
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);

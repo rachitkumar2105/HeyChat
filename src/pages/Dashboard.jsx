@@ -3,8 +3,8 @@ import Sidebar from '../components/chat/Sidebar';
 import ChatWindow from '../components/chat/ChatWindow';
 import CallModal from '../components/call/CallModal';
 import useWebRTC from '../hooks/useWebRTC';
-import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export default function Dashboard() {
   const [selectedChat, setSelectedChat] = useState(null);
@@ -25,6 +25,27 @@ export default function Dashboard() {
       });
     }
   }, [incomingCallData]);
+
+  // Self-healing: Assign username to old users on login
+  useEffect(() => {
+    const checkAndFixUsername = async () => {
+      if (!auth.currentUser) return;
+
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        if (!userData.username && userData.email) {
+          const newUsername = userData.email.split('@')[0];
+          await updateDoc(userRef, { username: newUsername });
+          console.log("Auto-assigned username to legacy user:", newUsername);
+        }
+      }
+    };
+
+    checkAndFixUsername();
+  }, []);
 
   // Handle starting a call from ChatWindow
   const handleStartCall = () => {
