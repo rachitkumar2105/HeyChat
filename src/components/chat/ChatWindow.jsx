@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Paperclip, Phone, Video, MoreVertical, Smile, ArrowLeft } from 'lucide-react';
-import { auth, db } from '../../lib/firebase';
+import { auth, db, storage } from '../../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
     collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, getDoc
 } from 'firebase/firestore';
+import { encryptMessage, decryptMessage, getKeyPair, importPublicKey, encryptFile, decryptFile, arrayBufferToBase64, base64ToArrayBuffer } from '../../lib/crypto';
 import CallModal from '../call/CallModal';
 
 export default function ChatWindow({ chatUser, onBack, onCallStart }) {
@@ -12,6 +14,11 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
     const [chatId, setChatId] = useState(null);
     const messagesEndRef = useRef(null);
     const [isCallOpen, setIsCallOpen] = useState(false);
+    const [recipientPublicKey, setRecipientPublicKey] = useState(null);
+    const [myKeys, setMyKeys] = useState(null);
+    const [decryptedCache, setDecryptedCache] = useState({});
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
     const currentUser = auth.currentUser;
 
     const scrollToBottom = () => {
@@ -67,16 +74,187 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
         return () => unsubscribe();
     }, [chatUser, currentUser]);
 
+    // Fetch keys on load
+    useEffect(() => {
+        const fetchKeys = async () => {
+            if (!currentUser || !chatUser) return;
+
+            // 1. Get my keys from local storage
+            try {
+                const keys = await getKeyPair(currentUser.uid);
+                setMyKeys(keys);
+            } catch (e) {
+                console.error("Failed to load my keys:", e);
+            }
+
+            // 2. Get recipient's public key from Firestore
+            try {
+                const userDoc = await getDoc(doc(db, 'users', chatUser.id || chatUser.uid));
+                if (userDoc.exists() && userDoc.data().publicKey) {
+                    const importedKey = await importPublicKey(userDoc.data().publicKey);
+                    setRecipientPublicKey(importedKey);
+                } else {
+                    console.warn("Recipient has no public key");
+                }
+            } catch (e) {
+                console.error("Failed to fetch recipient public key:", e);
+            }
+        };
+        fetchKeys();
+    }, [chatUser, currentUser]);
+
+    // Decrypt messages when they change or keys are loaded
+    useEffect(() => {
+        const decryptAll = async () => {
+            if (!myKeys || messages.length === 0) return;
+
+            const newCache = { ...decryptedCache };
+            let updated = false;
+
+            for (const msg of messages) {
+                // Skip if already in cache
+                if (newCache[msg.id]) continue;
+
+                if (msg.type === 'image' && msg.keys && msg.keys[currentUser.uid]) {
+                    // Decrypt Image
+                    try {
+                        // 1. Decrypt AES Key using RSA Private Key
+                        const encryptedSessionKey = base64ToArrayBuffer(msg.keys[currentUser.uid]);
+                        const sessionKeyRaw = await window.crypto.subtle.decrypt(
+                            { name: "RSA-OAEP" },
+                            myKeys.privateKey,
+                            encryptedSessionKey
+                        );
+
+                        // 2. Fetch Encrypted Blob
+                        const response = await fetch(msg.url);
+                        const encryptedBlob = await response.blob();
+
+                        // 3. Decrypt Blob
+                        const iv = base64ToArrayBuffer(msg.iv);
+                        const decryptedBlob = await decryptFile(encryptedBlob, sessionKeyRaw, iv);
+
+                        newCache[msg.id] = URL.createObjectURL(decryptedBlob);
+                        updated = true;
+                    } catch (e) {
+                        console.error("Failed to decrypt image", e);
+                        newCache[msg.id] = null; // Mark failure
+                    }
+                }
+                // Decrypt Text
+                else if (msg.keys && !newCache[msg.id]) {
+                    try {
+                        const text = await decryptMessage(msg, myKeys.privateKey, currentUser.uid);
+                        newCache[msg.id] = text;
+                        updated = true;
+                    } catch (e) {
+                        newCache[msg.id] = "🔒 Decryption Failed";
+                        updated = true;
+                    }
+                }
+                // Handle legacy plaintext
+                else if (!msg.keys && !newCache[msg.id]) {
+                    newCache[msg.id] = msg.text;
+                    updated = true;
+                }
+            }
+
+            if (updated) {
+                setDecryptedCache(newCache);
+            }
+        };
+        decryptAll();
+    }, [messages, myKeys]);
+
+    const handleFileSelect = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !chatId || !myKeys || !recipientPublicKey) return;
+
+        setUploading(true);
+        try {
+            console.log("🔒 Encrypting Image...");
+            // 1. Encrypt File
+            const { encryptedBlob, sessionKey, iv } = await encryptFile(file);
+
+            // 2. Encrypt Session Key for recipients
+            const recipientId = chatUser.id || chatUser.uid;
+
+            // Encrypt keys using RSA
+            const encryptedKeyMe = await window.crypto.subtle.encrypt(
+                { name: "RSA-OAEP" },
+                myKeys.publicKey,
+                sessionKey
+            );
+            const encryptedKeyOther = await window.crypto.subtle.encrypt(
+                { name: "RSA-OAEP" },
+                recipientPublicKey,
+                sessionKey
+            );
+
+            const keys = {
+                [currentUser.uid]: arrayBufferToBase64(encryptedKeyMe),
+                [recipientId]: arrayBufferToBase64(encryptedKeyOther)
+            };
+
+            // 3. Upload Encrypted Blob
+            const storageRef = ref(storage, `chat-images/${chatId}/${Date.now()}_encrypted`);
+            await uploadBytes(storageRef, encryptedBlob);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // 4. Send Message
+            await addDoc(collection(db, 'chats', chatId, 'messages'), {
+                type: 'image',
+                url: downloadURL,
+                iv: arrayBufferToBase64(iv),
+                keys: keys,
+                senderId: currentUser.uid,
+                createdAt: serverTimestamp(),
+                text: '[Encrypted Photo]' // Fallback text
+            });
+
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            alert("Upload failed.");
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !chatId) return;
 
         try {
-            await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                text: newMessage,
+            let messageData = {
+                text: newMessage, // Fallback for legacy clients (optional, or send garbled text to enforce)
                 senderId: currentUser.uid,
                 createdAt: serverTimestamp(),
-            });
+            };
+
+            // If we have both keys, start Encryption
+            if (myKeys && recipientPublicKey) {
+                console.log("🔒 Encrypting message...");
+                const recipientId = chatUser.id || chatUser.uid;
+                const publicKeys = {
+                    [currentUser.uid]: myKeys.publicKey, // Encrypt for self so I can read it later
+                    [recipientId]: recipientPublicKey
+                };
+
+                const encryptedData = await encryptMessage(newMessage, publicKeys);
+
+                // Overwrite/Extend messageData with encrypted fields
+                messageData = {
+                    ...messageData,
+                    text: encryptedData.text, // Store encrypted ciphertext in main text field (or separate one)
+                    iv: encryptedData.iv,
+                    keys: encryptedData.keys
+                };
+            } else {
+                console.warn("⚠️ Sending in PLAINTEXT (Missing keys)");
+            }
+
+            await addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
             setNewMessage('');
         } catch (error) {
             console.error("Error sending message:", error);
@@ -130,7 +308,18 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
                                     : 'bg-gray-800 border border-gray-700 text-gray-100 rounded-tl-none'
                                 }
                         `}>
-                                <p>{msg.text}</p>
+                                {msg.type === 'image' ? (
+                                    decryptedCache[msg.id] ? (
+                                        <img src={decryptedCache[msg.id]} alt="Encrypted" className="rounded-lg max-w-full" />
+                                    ) : (
+                                        <div className="flex items-center gap-2 italic opacity-70">
+                                            <span>🔒 Decrypting Photo...</span>
+                                        </div>
+                                    )
+                                ) : (
+                                    <p>{decryptedCache[msg.id] || (msg.keys ? "🔒 Decrypting..." : msg.text)}</p>
+                                )}
+
                                 <div className={`text-[10px] mt-1 flex gap-1 items-center opacity-70 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                     {msg.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
@@ -144,12 +333,28 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
             {/* Input */}
             <form onSubmit={handleSendMessage} className="p-4 bg-gray-900 border-t border-gray-800 z-10">
                 <div className="flex items-center gap-2 bg-gray-800 p-2 rounded-full border border-gray-700 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all">
-                    <button type="button" className="p-2 text-gray-400 hover:text-white transition"><Paperclip size={20} /></button>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`p-2 text-gray-400 hover:text-white transition ${uploading ? 'animate-pulse' : ''}`}
+                            disabled={uploading}
+                        >
+                            <Paperclip size={20} />
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                        />
+                    </div>
                     <input
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         className="flex-1 bg-transparent px-2 py-2 outline-none text-white placeholder-gray-500"
-                        placeholder="Type a message..."
+                        placeholder={recipientPublicKey ? "Type a secure message..." : "Type a message (Unencrypted)..."}
                     />
                     <button type="button" className="p-2 text-gray-400 hover:text-white transition"><Smile size={20} /></button>
                     <button

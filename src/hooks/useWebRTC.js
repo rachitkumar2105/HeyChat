@@ -3,6 +3,7 @@ import { db, auth } from '../lib/firebase';
 import {
     collection, doc, onSnapshot, addDoc, setDoc, updateDoc, getDoc, deleteDoc
 } from 'firebase/firestore';
+import { encryptMessage, decryptMessage, getKeyPair, importPublicKey, exportPublicKey } from '../lib/crypto';
 
 const servers = {
     iceServers: [
@@ -19,8 +20,47 @@ export default function useWebRTC() {
     const [callStatus, setCallStatus] = useState('idle'); // idle, calling, incoming, active, ended
     const [callId, setCallId] = useState(null);
     const [incomingCallData, setIncomingCallData] = useState(null);
+    const [myKeys, setMyKeys] = useState(null);
 
     const pc = useRef(null);
+
+    // Fetch my keys on mount
+    useEffect(() => {
+        if (auth.currentUser) {
+            getKeyPair(auth.currentUser.uid).then(setMyKeys);
+        }
+    }, [auth.currentUser]);
+
+    // Helper: Encrypt Payload
+    const securePayload = async (data, recipientId) => {
+        if (!myKeys) return data; // Fallback (shouldn't happen if setup correct)
+
+        // Fetch recipient public key
+        const userDoc = await getDoc(doc(db, 'users', recipientId));
+        if (!userDoc.exists() || !userDoc.data().publicKey) return data; // Fallback
+
+        const recipientKey = await importPublicKey(userDoc.data().publicKey);
+        const publicKeys = {
+            [auth.currentUser.uid]: myKeys.publicKey,
+            [recipientId]: recipientKey
+        };
+
+        const jsonString = JSON.stringify(data);
+        const encrypted = await encryptMessage(jsonString, publicKeys);
+        return { encrypted: true, ...encrypted };
+    };
+
+    // Helper: Decrypt Payload
+    const secureReceive = async (data) => {
+        if (!data.encrypted || !myKeys) return data;
+        try {
+            const jsonString = await decryptMessage(data, myKeys.privateKey, auth.currentUser.uid);
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.error("Signaling Decryption Failed", e);
+            return null;
+        }
+    };
 
     // Initialize PeerConnection
     const createPeerConnection = () => {
@@ -73,9 +113,10 @@ export default function useWebRTC() {
 
         setCallId(callDoc.id);
 
-        pc.current.onicecandidate = (event) => {
+        pc.current.onicecandidate = async (event) => {
             if (event.candidate) {
-                addDoc(offerCandidates, event.candidate.toJSON());
+                const payload = await securePayload(event.candidate.toJSON(), calleeId);
+                addDoc(offerCandidates, payload);
             }
         };
 
@@ -87,24 +128,29 @@ export default function useWebRTC() {
             type: offerDescription.type,
         };
 
+        const offerPayload = await securePayload(offer, calleeId);
+
         await setDoc(callDoc, {
             callerId: auth.currentUser.uid,
             calleeId,
-            offer,
+            offer: offerPayload,
             status: 'offering',
             timestamp: new Date()
         });
 
         setCallStatus('calling');
 
-        onSnapshot(callDoc, (snapshot) => {
+        onSnapshot(callDoc, async (snapshot) => {
             const data = snapshot.data();
             if (!pc.current || !data) return;
 
             if (pc.current.signalingState !== 'stable' && data.answer) {
-                const answerDescription = new RTCSessionDescription(data.answer);
-                pc.current.setRemoteDescription(answerDescription);
-                setCallStatus('active');
+                const decryptedAnswer = await secureReceive(data.answer);
+                if (decryptedAnswer) {
+                    const answerDescription = new RTCSessionDescription(decryptedAnswer);
+                    pc.current.setRemoteDescription(answerDescription);
+                    setCallStatus('active');
+                }
             }
 
             if (data.status === 'ended') {
@@ -113,10 +159,13 @@ export default function useWebRTC() {
         });
 
         onSnapshot(answerCandidates, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
+            snapshot.docChanges().forEach(async (change) => {
                 if (change.type === 'added') {
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    pc.current.addIceCandidate(candidate);
+                    const decryptedCandidate = await secureReceive(change.doc.data());
+                    if (decryptedCandidate) {
+                        const candidate = new RTCIceCandidate(decryptedCandidate);
+                        pc.current.addIceCandidate(candidate);
+                    }
                 }
             });
         });
@@ -137,14 +186,13 @@ export default function useWebRTC() {
         const offerCandidates = collection(callDoc, 'offerCandidates');
         const answerCandidates = collection(callDoc, 'answerCandidates');
 
-        pc.current.onicecandidate = (event) => {
-            if (event.candidate) {
-                addDoc(answerCandidates, event.candidate.toJSON());
-            }
-        };
+
 
         const callData = (await getDoc(callDoc)).data();
-        const offerDescription = callData.offer;
+        const callerId = callData.callerId; // Get caller ID
+        const offerDescription = await secureReceive(callData.offer);
+
+        if (!offerDescription) { console.error("Could not decrypt offer"); return; }
 
         await pc.current.setRemoteDescription(new RTCSessionDescription(offerDescription));
 
@@ -156,14 +204,26 @@ export default function useWebRTC() {
             sdp: answerDescription.sdp,
         };
 
-        await updateDoc(callDoc, { answer, status: 'answered' });
+        const answerPayload = await securePayload(answer, callerId);
+        await updateDoc(callDoc, { answer: answerPayload, status: 'answered' });
         setCallStatus('active');
 
+        // Setup ICE candidate sender with known callerId
+        pc.current.onicecandidate = async (event) => {
+            if (event.candidate) {
+                const payload = await securePayload(event.candidate.toJSON(), callerId);
+                addDoc(answerCandidates, payload);
+            }
+        };
+
         onSnapshot(offerCandidates, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
+            snapshot.docChanges().forEach(async (change) => {
                 if (change.type === 'added') {
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    pc.current.addIceCandidate(candidate);
+                    const decryptedCandidate = await secureReceive(change.doc.data());
+                    if (decryptedCandidate) {
+                        const candidate = new RTCIceCandidate(decryptedCandidate);
+                        pc.current.addIceCandidate(candidate);
+                    }
                 }
             });
         });

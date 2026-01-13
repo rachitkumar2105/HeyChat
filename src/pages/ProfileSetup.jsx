@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../lib/firebase';
 import { doc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { generateKeyPair, storeKeyPair, exportPublicKey, getKeyPair } from '../lib/crypto';
 
 export default function ProfileSetup() {
     const [displayName, setDisplayName] = useState('');
@@ -79,6 +80,28 @@ export default function ProfileSetup() {
                 throw new Error("Could not generate a unique username. Please try again.");
             }
 
+
+            // E2EE: Handle Key Generation
+            let publicKeyJWK = null;
+            try {
+                // Check if we already have keys locally
+                const existingKeys = await getKeyPair(user.uid);
+                if (existingKeys) {
+                    console.log("ProfileSetup: Keys already exist locally.");
+                    publicKeyJWK = await exportPublicKey(existingKeys.publicKey);
+                } else {
+                    console.log("ProfileSetup: Generating new E2EE keys...");
+                    const keyPair = await generateKeyPair();
+                    await storeKeyPair(user.uid, keyPair);
+                    publicKeyJWK = await exportPublicKey(keyPair.publicKey);
+                    console.log("ProfileSetup: Keys generated and stored locally.");
+                }
+            } catch (err) {
+                console.error("ProfileSetup: Error with keys:", err);
+                // We continue even if key gen fails, but E2EE won't work for this user yet.
+                // Optionally throw error to block signup.
+            }
+
             console.log("Saving profile for:", user.uid, "Username:", username);
 
             await setDoc(doc(db, 'users', user.uid), {
@@ -89,8 +112,9 @@ export default function ProfileSetup() {
                 bio,
                 photoURL,
                 status: 'online',
-                lastSeen: new Date().toISOString()
-            });
+                lastSeen: new Date().toISOString(),
+                publicKey: publicKeyJWK // Store public key for others to use
+            }, { merge: true }); // Merge to avoid overwriting existing fields if any
 
             console.log("Profile saved successfully!");
             navigate('/dashboard');
