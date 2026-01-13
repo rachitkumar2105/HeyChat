@@ -26,9 +26,15 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
         if (!currentUser || !chatUser) return;
 
         // Generate a consistent Chat ID: alphabetical order of UIDs ensures consistency
-        const id = currentUser.uid > chatUser.uid
-            ? `${currentUser.uid}_${chatUser.id}`
-            : `${chatUser.id}_${currentUser.uid}`;
+        const otherId = chatUser.id || chatUser.uid;
+        if (!otherId) {
+            console.error("ChatWindow: chatUser has no ID/UID", chatUser);
+            return;
+        }
+
+        const id = currentUser.uid > otherId
+            ? `${currentUser.uid}_${otherId}`
+            : `${otherId}_${currentUser.uid}`;
 
         setChatId(id);
 
@@ -38,7 +44,7 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
             const chatSnap = await getDoc(chatRef);
             if (!chatSnap.exists()) {
                 await setDoc(chatRef, {
-                    users: [currentUser.uid, chatUser.id],
+                    users: [currentUser.uid, otherId],
                     createdAt: serverTimestamp()
                 });
             }
@@ -74,6 +80,7 @@ export default function ChatWindow({ chatUser, onBack, onCallStart }) {
             setNewMessage('');
         } catch (error) {
             console.error("Error sending message:", error);
+            alert("Failed to send message. Please try again.");
         }
     };
 

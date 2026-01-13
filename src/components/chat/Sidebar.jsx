@@ -33,10 +33,11 @@ export default function Sidebar({ onSelectChat, selectedChat }) {
         return () => unsubscribe();
     }, [currentUser]);
 
-    const filteredUsers = users.filter(user =>
-        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(user => {
+        const nameMatch = user.displayName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const usernameMatch = user.username?.toLowerCase().includes(searchTerm.toLowerCase());
+        return nameMatch || usernameMatch;
+    });
 
     const handleLogout = () => {
         auth.signOut();

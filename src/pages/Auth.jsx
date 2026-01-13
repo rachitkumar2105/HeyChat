@@ -37,12 +37,6 @@ export default function Auth() {
             if (isLogin) {
                 // Login Logic
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                if (!userCredential.user.emailVerified) {
-                    setError("Please verify your email first.");
-                    await signOut(auth);
-                    setLoading(false);
-                    return;
-                }
 
                 // Check if user profile exists
                 const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
@@ -57,10 +51,8 @@ export default function Auth() {
                 }
             } else {
                 // Signup Logic
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await sendEmailVerification(userCredential.user);
-                alert("Verification email sent! Please check your inbox.");
-                setIsLogin(true); // Switch to login view
+                await createUserWithEmailAndPassword(auth, email, password);
+                navigate('/profile-setup');
             }
         } catch (err) {
             console.error("Auth Error:", err);

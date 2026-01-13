@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Camera, User, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function ProfileSetup() {
@@ -55,10 +55,28 @@ export default function ProfileSetup() {
             }
 
             // Generate username from email cleanly
-            const username = user.email ? user.email.split('@')[0] : '';
+            let baseUsername = user.email ? user.email.split('@')[0] : 'user';
+            let username = baseUsername;
 
-            if (!username) {
-                throw new Error("Could not generate username from email.");
+            // Check for uniqueness
+            const checkUsernameUniqueness = async (u) => {
+                const q = query(collection(db, 'users'), where('username', '==', u));
+                const snapshot = await getDocs(q);
+                return snapshot.empty;
+            };
+
+            let isUnique = await checkUsernameUniqueness(username);
+            let attempts = 0;
+            while (!isUnique && attempts < 5) {
+                // Append random 4 digit number
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                username = `${baseUsername}${randomSuffix}`;
+                isUnique = await checkUsernameUniqueness(username);
+                attempts++;
+            }
+
+            if (!isUnique) {
+                throw new Error("Could not generate a unique username. Please try again.");
             }
 
             console.log("Saving profile for:", user.uid, "Username:", username);
