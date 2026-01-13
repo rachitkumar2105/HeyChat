@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, User, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../lib/firebase';
@@ -11,7 +11,22 @@ export default function ProfileSetup() {
     const [avatar, setAvatar] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState(null); // Local user state
     const navigate = useNavigate();
+
+    // Listen for auth state changes
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                console.log("ProfileSetup: User authenticated:", currentUser.email);
+            } else {
+                console.log("ProfileSetup: No user, redirecting to auth...");
+                navigate('/auth');
+            }
+        });
+        return () => unsubscribe();
+    }, [navigate]);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -23,24 +38,35 @@ export default function ProfileSetup() {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        if (!auth.currentUser) return;
+
+        if (!user) {
+            alert("You must be logged in to save your profile.");
+            return;
+        }
+
         setLoading(true);
 
         try {
             let photoURL = '';
             if (avatar) {
-                const storageRef = ref(storage, `avatars/${auth.currentUser.uid}`);
+                const storageRef = ref(storage, `avatars/${user.uid}`);
                 await uploadBytes(storageRef, avatar);
                 photoURL = await getDownloadURL(storageRef);
             }
 
-            // Generate username from email
-            const username = auth.currentUser.email.split('@')[0];
+            // Generate username from email cleanly
+            const username = user.email ? user.email.split('@')[0] : '';
 
-            await setDoc(doc(db, 'users', auth.currentUser.uid), {
-                uid: auth.currentUser.uid,
-                email: auth.currentUser.email,
-                username, // Save username
+            if (!username) {
+                throw new Error("Could not generate username from email.");
+            }
+
+            console.log("Saving profile for:", user.uid, "Username:", username);
+
+            await setDoc(doc(db, 'users', user.uid), {
+                uid: user.uid,
+                email: user.email,
+                username,
                 displayName,
                 bio,
                 photoURL,
@@ -48,14 +74,23 @@ export default function ProfileSetup() {
                 lastSeen: new Date().toISOString()
             });
 
+            console.log("Profile saved successfully!");
             navigate('/dashboard');
         } catch (error) {
             console.error("Error saving profile:", error);
-            alert("Failed to save profile. Please try again.");
+            alert(`Failed to save profile: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
+
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
@@ -98,7 +133,7 @@ export default function ProfileSetup() {
                     {/* Username Preview */}
                     <div className="bg-gray-700/50 p-4 rounded-xl border border-gray-600/50">
                         <label className="block text-gray-400 text-sm mb-1">Your Username</label>
-                        <p className="text-purple-400 font-mono">@{auth.currentUser?.email?.split('@')[0]}</p>
+                        <p className="text-purple-400 font-mono">@{user?.email?.split('@')[0] || 'loading...'}</p>
                         <p className="text-xs text-gray-500 mt-1">People can search for you using this username.</p>
                     </div>
 
