@@ -13,6 +13,7 @@ export default function ProfileSetup() {
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState(null); // Local user state
+    const [assignedUsername, setAssignedUsername] = useState('');
     const navigate = useNavigate();
 
     // Listen for auth state changes
@@ -21,6 +22,22 @@ export default function ProfileSetup() {
             if (currentUser) {
                 setUser(currentUser);
                 console.log("ProfileSetup: User authenticated:", currentUser.email);
+
+                // Fetch the assigned username from Firestore
+                const fetchUserDoc = async () => {
+                    try {
+                        const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', currentUser.uid)));
+                        if (!userDoc.empty) {
+                            const userData = userDoc.docs[0].data();
+                            if (userData.username) {
+                                setAssignedUsername(userData.username);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error fetching user doc:", e);
+                    }
+                };
+                fetchUserDoc();
             } else {
                 console.log("ProfileSetup: No user, redirecting to auth...");
                 navigate('/auth');
@@ -55,30 +72,16 @@ export default function ProfileSetup() {
                 photoURL = await getDownloadURL(storageRef);
             }
 
-            // Generate username from email cleanly
-            let baseUsername = user.email ? user.email.split('@')[0] : 'user';
-            let username = baseUsername;
-
-            // Check for uniqueness
-            const checkUsernameUniqueness = async (u) => {
-                const q = query(collection(db, 'users'), where('username', '==', u));
-                const snapshot = await getDocs(q);
-                return snapshot.empty;
-            };
-
-            let isUnique = await checkUsernameUniqueness(username);
-            let attempts = 0;
-            while (!isUnique && attempts < 5) {
-                // Append random 4 digit number
-                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-                username = `${baseUsername}${randomSuffix}`;
-                isUnique = await checkUsernameUniqueness(username);
-                attempts++;
+            // Username is already assigned in Auth.jsx and fetched into assignedUsername state
+            let username = assignedUsername;
+            if (!username) {
+                // Fallback for legacy
+                username = user.email ? user.email.split('@')[0] : 'user';
             }
 
-            if (!isUnique) {
-                throw new Error("Could not generate a unique username. Please try again.");
-            }
+            // No need to check uniqueness here again if we trust Auth.jsx, 
+            // but if user EDITED it, we would need to check. 
+            // For now, prompt implies "Allocate", so we stick to the assigned one.
 
 
             // E2EE: Handle Key Generation
@@ -175,7 +178,7 @@ export default function ProfileSetup() {
                     {/* Username Preview */}
                     <div className="bg-gray-700/50 p-4 rounded-xl border border-gray-600/50">
                         <label className="block text-gray-400 text-sm mb-1">Your Username</label>
-                        <p className="text-purple-400 font-mono">@{user?.email?.split('@')[0] || 'loading...'}</p>
+                        <p className="text-purple-400 font-mono">@{assignedUsername || 'loading...'}</p>
                         <p className="text-xs text-gray-500 mt-1">People can search for you using this username.</p>
                     </div>
 

@@ -9,10 +9,12 @@ import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { sendLoginAlert } from '../lib/email';
 import { useNavigate } from 'react-router-dom';
+import { generateUniqueUsername } from '../lib/username';
 
 export default function Auth() {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
+    const [fullName, setFullName] = useState(''); // New state for Full Name
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -33,6 +35,12 @@ export default function Auth() {
             return;
         }
 
+        if (!isLogin && !fullName.trim()) {
+            setError("Please enter your full name.");
+            setLoading(false);
+            return;
+        }
+
         try {
             if (isLogin) {
                 // Optimistic navigation - Don't wait for profile fetch
@@ -45,13 +53,14 @@ export default function Auth() {
                 const user = userCredential.user;
 
                 // Create basic user doc immediately so they exist in search
-                // valid even if they abandon profile setup
+                const uniqueUsername = await generateUniqueUsername(user.email, db);
+
                 try {
                     await setDoc(doc(db, 'users', user.uid), {
                         uid: user.uid,
                         email: user.email,
-                        username: user.email.split('@')[0],
-                        displayName: user.email.split('@')[0], // Default display name
+                        username: uniqueUsername,
+                        displayName: fullName, // Use the input Full Name
                         photoURL: '',
                         status: 'online',
                         lastSeen: new Date().toISOString()
@@ -60,6 +69,7 @@ export default function Auth() {
                     console.error("Error creating initial user doc:", e);
                 }
 
+                // Pass the username to profile setup (optional, but good for UX if we passed state)
                 navigate('/profile-setup');
             }
         } catch (err) {
@@ -93,6 +103,19 @@ export default function Auth() {
                 )}
 
                 <form onSubmit={handleAuth} className="space-y-4">
+                    {!isLogin && (
+                        <div>
+                            <label className="block text-gray-400 mb-1">Full Name</label>
+                            <input
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                className="w-full bg-gray-700 text-white rounded p-3 focus:ring-2 focus:ring-purple-500 outline-none"
+                                placeholder="John Doe"
+                                required
+                            />
+                        </div>
+                    )}
                     <div>
                         <label className="block text-gray-400 mb-1">Email (Gmail only)</label>
                         <input
