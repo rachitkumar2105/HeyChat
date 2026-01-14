@@ -6,7 +6,7 @@ import {
     signOut
 } from "firebase/auth";
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { sendLoginAlert } from '../lib/email';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,33 +35,31 @@ export default function Auth() {
 
         try {
             if (isLogin) {
-                // Login Logic
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
-                // Check if user profile exists
-                // Check if user profile exists with retry logic for spotty connections
-                let userDoc;
-                try {
-                    userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-                } catch (docError) {
-                    console.warn("Profile fetch failed (likely offline). Proceeding to Dashboard.", docError);
-                    // Fail-open: Assume user has profile and let Dashboard handle it / load from cache later
-                    // This prevents "Client is offline" from blocking Login
-                    navigate('/dashboard');
-                    return; // Stop further execution
-                }
-
-                // Send login alert (non-blocking)
+                // Optimistic navigation - Don't wait for profile fetch
+                // Dashboard handles missing profiles/offline state better
                 sendLoginAlert(email, "User");
-
-                if (userDoc && userDoc.exists()) {
-                    navigate('/dashboard');
-                } else {
-                    navigate('/dashboard'); // Just go to dashboard, let them setup profile later via settings if missing
-                }
+                navigate('/dashboard');
             } else {
                 // Signup Logic
-                await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Create basic user doc immediately so they exist in search
+                // valid even if they abandon profile setup
+                try {
+                    await setDoc(doc(db, 'users', user.uid), {
+                        uid: user.uid,
+                        email: user.email,
+                        username: user.email.split('@')[0],
+                        displayName: user.email.split('@')[0], // Default display name
+                        photoURL: '',
+                        status: 'online',
+                        lastSeen: new Date().toISOString()
+                    });
+                } catch (e) {
+                    console.error("Error creating initial user doc:", e);
+                }
+
                 navigate('/profile-setup');
             }
         } catch (err) {
