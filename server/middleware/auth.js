@@ -10,6 +10,19 @@ const protect = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Special handling for hardcoded admin
+        if (decoded.id === "admin") {
+            req.user = {
+                _id: "admin",
+                displayName: "Administrator",
+                username: "admin",
+                email: "admin@123",
+                isAdmin: true
+            };
+            return next();
+        }
+
         const user = await User.findById(decoded.id).select("-password");
         if (!user) return res.status(401).json({ error: "User not found" });
         if (user.isBanned) return res.status(403).json({ error: "Account banned" });
