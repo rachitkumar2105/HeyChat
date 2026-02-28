@@ -47,6 +47,13 @@ const authLimiter = rateLimit({
 app.use("/api/auth/", authLimiter);
 
 // ─── File Upload ────────────────────────────────────────────────────────────
+const fs = require("fs");
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log("📁 Created uploads directory");
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname.replace(/\s/g, "_")),
@@ -61,16 +68,38 @@ const upload = multer({
   },
 });
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(uploadsDir));
 
-// Serve frontend static files if they exist (for unified deployment fallback)
-const clientBuildPath = path.join(__dirname, "../client/dist");
-if (require("fs").existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
-}
+// ─── MongoDB ────────────────────────────────────────────────────────────────
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
+
+// ─── Routes ─────────────────────────────────────────────────────────────
+app.get("/", (req, res) => {
+  res.send(`
+    <div style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+      <h1>🚀 HeyChat Backend is Running</h1>
+      <p>Server status: 🟢 Healthy</p>
+      <p>API Base: <a href="/api/health">/api/health</a></p>
+    </div>
+  `);
+});
+
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/user", require("./routes/user"));
+app.use("/api/chat", require("./routes/chat"));
+app.use("/api/admin", require("./routes/admin"));
+app.use("/api/report", require("./routes/report"));
+
+// Health check
+app.get("/api/health", (req, res) => res.json({
+  status: "ok",
+  time: new Date(),
+  env: process.env.NODE_ENV || "development",
+  mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
+}));
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -81,24 +110,30 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   });
 });
 
-// ─── MongoDB ────────────────────────────────────────────────────────────────
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
-
-// ─── Routes ─────────────────────────────────────────────────────────────────
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/user", require("./routes/user"));
-app.use("/api/chat", require("./routes/chat"));
-app.use("/api/admin", require("./routes/admin"));
-app.use("/api/report", require("./routes/report"));
-
-// Health check
-app.get("/api/health", (req, res) => res.json({ status: "ok", time: new Date() }));
+// Serve frontend static files if they exist (for unified deployment fallback)
+// This MUST come after API routes so it doesn't intercept API calls
+const clientBuildPath = path.join(__dirname, "../client/dist");
+if (require("fs").existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
 
 // ─── Socket.io ──────────────────────────────────────────────────────────────
 require("./socket")(io);
+
+// ─── Error Handling ─────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+app.use((err, req, res, next) => {
+  console.error("🔥 Global Error:", err.message);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal server error",
+  });
+});
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
