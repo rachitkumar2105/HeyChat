@@ -1,0 +1,13 @@
+node_modules
+client
+.git
+.gitignore
+README.md
+Dockerfile
+heychat
+src
+package-lock.json
+package.json
+postcss.config.js
+tailwind.config.js
+vite.config.js
