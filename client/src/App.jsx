@@ -6,6 +6,7 @@ import SignupPage from './pages/SignupPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import ChatPage from './pages/ChatPage';
 import AdminPage from './pages/AdminPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Protected route wrapper
 const PrivateRoute = ({ children }) => {
@@ -47,6 +48,14 @@ export default function App() {
                         <ChatProvider>
                             <ChatPage />
                         </ChatProvider>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/settings"
+                element={
+                    <PrivateRoute>
+                        <SettingsPage />
                     </PrivateRoute>
                 }
             />

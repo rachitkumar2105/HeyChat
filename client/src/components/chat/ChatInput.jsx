@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Mic, MicOff, Smile, X, Image } from 'lucide-react';
+import { Send, Paperclip, Mic, MicOff, Smile, X, Image, Camera } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +16,18 @@ export default function ChatInput({ friend, replyTo, onCancelReply }) {
     const typingTimer = useRef(null);
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
+    const emojiRef = useRef(null);
+
+    // Click outside listener for emoji picker
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (emojiRef.current && !emojiRef.current.contains(event.target)) {
+                setShowEmoji(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const sendMessage = (content, type = 'text', fileUrl = '') => {
         const socket = getSocket();
@@ -59,7 +71,7 @@ export default function ChatInput({ friend, replyTo, onCancelReply }) {
         clearTimeout(typingTimer.current);
     };
 
-    const handleFileUpload = async (e) => {
+    const handleFileUpload = async (e, isCamera = false) => {
         const file = e.target.files[0];
         if (!file) return;
         setUploading(true);
@@ -139,30 +151,44 @@ export default function ChatInput({ friend, replyTo, onCancelReply }) {
 
             <div className="flex items-end gap-2">
                 {/* Emoji */}
-                <div className="relative">
+                <div className="relative" ref={emojiRef}>
                     <button
                         onClick={() => setShowEmoji(!showEmoji)}
-                        className="btn-ghost p-2 rounded-full flex-shrink-0"
+                        className={`btn-ghost p-2 rounded-full flex-shrink-0 ${showEmoji ? 'text-primary-500 bg-primary-50' : ''}`}
                     >
                         <Smile className="w-5 h-5" />
                     </button>
                     {showEmoji && (
-                        <div className="absolute bottom-12 left-0 z-50">
+                        <div className="absolute bottom-14 left-0 z-50 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <div className="bg-white dark:bg-dark-800 border-b dark:border-dark-700 p-2 flex justify-between items-center">
+                                <span className="text-xs font-medium text-gray-500">Select Emojis</span>
+                                <button onClick={() => setShowEmoji(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-600 rounded-full">
+                                    <X className="w-4 h-4 text-gray-400" />
+                                </button>
+                            </div>
                             <EmojiPicker
-                                onEmojiClick={(e) => { setText((t) => t + e.emoji); setShowEmoji(false); }}
+                                onEmojiClick={(e) => { setText((t) => t + e.emoji); }}
                                 theme={dark ? 'dark' : 'light'}
-                                height={350}
-                                width={300}
+                                height={380}
+                                width={320}
+                                lazyLoadEmojis={true}
+                                previewConfig={{ showPreview: false }}
                             />
                         </div>
                     )}
                 </div>
 
-                {/* File upload */}
-                <label className="btn-ghost p-2 rounded-full flex-shrink-0 cursor-pointer">
-                    <Paperclip className="w-5 h-5" />
-                    <input type="file" className="hidden" accept="image/*,audio/*" onChange={handleFileUpload} />
-                </label>
+                {/* Camera / Gallery */}
+                <div className="flex items-center gap-1">
+                    <label className="btn-ghost p-2 rounded-full flex-shrink-0 cursor-pointer text-gray-500 hover:text-primary-500" title="Camera">
+                        <Camera className="w-5 h-5" />
+                        <input type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => handleFileUpload(e, true)} />
+                    </label>
+                    <label className="btn-ghost p-2 rounded-full flex-shrink-0 cursor-pointer text-gray-500 hover:text-primary-500" title="Gallery">
+                        <Image className="w-5 h-5" />
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e)} />
+                    </label>
+                </div>
 
                 {/* Text input */}
                 <div className="flex-1">
@@ -190,8 +216,8 @@ export default function ChatInput({ friend, replyTo, onCancelReply }) {
                         onTouchStart={startRecording}
                         onTouchEnd={stopRecording}
                         className={`p-2.5 rounded-full flex-shrink-0 transition-colors ${recording
-                                ? 'bg-red-500 text-white animate-pulse'
-                                : 'btn-ghost'
+                            ? 'bg-red-500 text-white animate-pulse'
+                            : 'btn-ghost'
                             }`}
                         title="Hold to record voice note"
                     >

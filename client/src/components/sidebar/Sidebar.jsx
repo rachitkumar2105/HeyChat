@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Search, UserPlus, Bell, X, Check, CheckCheck } from 'lucide-react';
+import { Search, UserPlus, Bell, X, Check, CheckCheck, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import Avatar from '../common/Avatar';
@@ -8,6 +8,7 @@ import api from '../../utils/api';
 
 export default function Sidebar({ onSelectFriend }) {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const { contacts, loadContacts, onlineUsers } = useChat();
     const [tab, setTab] = useState('chats'); // 'chats' | 'search' | 'requests'
     const [query, setQuery] = useState('');
@@ -76,50 +77,56 @@ export default function Sidebar({ onSelectFriend }) {
                                 </span>
                             </button>
                         )}
-                    </div>
-                </div>
-
-                {/* Search bar */}
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        className="input-field pl-9 py-2 text-sm"
-                        placeholder="Search users..."
-                        value={query}
-                        onChange={(e) => { handleSearch(e.target.value); if (e.target.value) setTab('search'); else setTab('chats'); }}
-                    />
-                    {query && (
-                        <button onClick={() => { setQuery(''); setSearchResults([]); setTab('chats'); }} className="absolute right-3 top-1/2 -translate-y-1/2">
-                            <X className="w-4 h-4 text-gray-400" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Tabs */}
-                <div className="flex gap-1 mt-3">
-                    {['chats', 'requests'].map((t) => (
                         <button
-                            key={t}
-                            onClick={() => setTab(t)}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t
-                                    ? 'bg-primary-500 text-white'
-                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                                }`}
+                            onClick={() => navigate('/settings')}
+                            className="btn-ghost p-2 rounded-full text-gray-500 hover:text-primary-500 transition-colors"
+                            title="Settings"
                         >
-                            {t}
-                            {t === 'requests' && pendingRequests.length > 0 && (
-                                <span className="ml-1 bg-red-500 text-white text-xs px-1.5 rounded-full">
-                                    {pendingRequests.length}
-                                </span>
-                            )}
+                            <Settings className="w-5 h-5" />
                         </button>
-                    ))}
+                    </div>
                 </div>
             </div>
 
+            {/* Search bar */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                    type="text"
+                    className="input-field pl-9 py-2 text-sm"
+                    placeholder="Search users..."
+                    value={query}
+                    onChange={(e) => { handleSearch(e.target.value); if (e.target.value) setTab('search'); else setTab('chats'); }}
+                />
+                {query && (
+                    <button onClick={() => { setQuery(''); setSearchResults([]); setTab('chats'); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-4 h-4 text-gray-400" />
+                    </button>
+                )}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 mt-3">
+                {['chats', 'requests'].map((t) => (
+                    <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t
+                            ? 'bg-primary-500 text-white'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                            }`}
+                    >
+                        {t}
+                        {t === 'requests' && pendingRequests.length > 0 && (
+                            <span className="ml-1 bg-red-500 text-white text-xs px-1.5 rounded-full">
+                                {pendingRequests.length}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pt-0">
                 {/* Search results */}
                 {tab === 'search' && (
                     <div>

@@ -152,13 +152,83 @@ const toggleBlock = async (req, res) => {
 const getProfile = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select(
-            "displayName username profilePic lastActive createdAt"
+            "displayName username profilePic about phoneNumber socialLinks privacy lastActive createdAt"
         );
         if (!user) return res.status(404).json({ error: "User not found" });
-        res.json(user);
+
+        // Basic privacy filtering (can be expanded later)
+        const profile = user.toObject();
+        const isFriend = user.friends.includes(req.user._id);
+
+        if (profile.privacy) {
+            if (profile.privacy.profilePhoto === "nobody" || (profile.privacy.profilePhoto === "contacts" && !isFriend)) {
+                profile.profilePic = "";
+            }
+            if (profile.privacy.about === "nobody" || (profile.privacy.about === "contacts" && !isFriend)) {
+                profile.about = "";
+            }
+        }
+
+        res.json(profile);
     } catch (err) {
         res.status(500).json({ error: "Failed to get profile" });
     }
 };
 
-module.exports = { searchUsers, sendRequest, acceptRequest, rejectRequest, getContacts, toggleBlock, getProfile };
+// @PUT /api/user/profile
+const updateProfile = async (req, res) => {
+    try {
+        const { displayName, about, phoneNumber, socialLinks } = req.body;
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        if (displayName) user.displayName = displayName.trim();
+        if (about !== undefined) user.about = about.trim();
+        if (phoneNumber !== undefined) user.phoneNumber = phoneNumber.trim();
+
+        if (socialLinks) {
+            user.socialLinks = {
+                ...user.socialLinks,
+                ...socialLinks,
+            };
+        }
+
+        await user.save();
+        res.json({ message: "Profile updated successfully", user });
+    } catch (err) {
+        res.status(500).json({ error: "Server error updating profile" });
+    }
+};
+
+// @PUT /api/user/privacy
+const updatePrivacy = async (req, res) => {
+    try {
+        const { privacy } = req.body;
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        if (privacy) {
+            user.privacy = {
+                ...user.privacy,
+                ...privacy,
+            };
+        }
+
+        await user.save();
+        res.json({ message: "Privacy settings updated", privacy: user.privacy });
+    } catch (err) {
+        res.status(500).json({ error: "Server error updating privacy" });
+    }
+};
+
+module.exports = {
+    searchUsers,
+    sendRequest,
+    acceptRequest,
+    rejectRequest,
+    getContacts,
+    toggleBlock,
+    getProfile,
+    updateProfile,
+    updatePrivacy
+};
