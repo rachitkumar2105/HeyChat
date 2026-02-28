@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { Search, UserPlus, Bell, X, Check, CheckCheck, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
