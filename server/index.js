@@ -136,14 +136,25 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ────────────────────────────────────────────────────────────
-const PORT = Number(process.env.PORT) || 5000;
+// Hugging Face Spaces REQUIRE port 7860. If PORT is not set, we MUST use 7860.
+const PORT = process.env.PORT ? Number(process.env.PORT) : 7860;
 
-console.log(`📡 Attempting to start server on port ${PORT}...`);
-console.log(`🌍 Client URL: ${process.env.CLIENT_URL || "Not set (allowing all)"}`);
-console.log(`🔐 JWT Secret length: ${process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0}`);
+console.log('-------------------------------------------');
+console.log(`🚀 HeyChat Backend Startup Sequence`);
+console.log(`📡 Target Port: ${PORT}`);
+console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔗 Client URL Allowed: ${process.env.CLIENT_URL || '*'}`);
+console.log('-------------------------------------------');
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 HeyChat server fully operational!`);
-  console.log(`🔗 Local URL: http://localhost:${PORT}`);
-  console.log(`📁 Static files (uploads): ${uploadsDir}`);
+server.on('error', (err) => {
+  console.error('❌ SERVER ERROR:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Please check for other processes.`);
+  }
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ HeyChat server is UP and LISTENING on port ${PORT}`);
+  console.log(`🏠 Internal Root Landing Page: http://0.0.0.0:${PORT}/`);
+  console.log('-------------------------------------------');
 });
