@@ -14,6 +14,16 @@ const validatePassword = (password) => {
     return errors;
 };
 
+// Generate username suggestions
+const generateUsernameSuggestions = (username) => {
+    const base = username.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return [
+        `${base}${Math.floor(Math.random() * 900) + 100}`,
+        `${base}_${Math.floor(Math.random() * 99) + 1}`,
+        `${base}${new Date().getFullYear()}`,
+    ];
+};
+
 // @POST /api/auth/signup
 const signup = async (req, res) => {
     try {
@@ -29,26 +39,36 @@ const signup = async (req, res) => {
             return res.status(400).json({ error: "Invalid email format" });
         }
 
+        // Username format validation (only letters, numbers, underscores)
+        if (!/^[a-z0-9_]{3,20}$/.test(username.toLowerCase())) {
+            return res.status(400).json({ error: "Username must be 3-20 characters: letters, numbers, underscores only" });
+        }
+
         // Password validation
         const pwErrors = validatePassword(password);
         if (pwErrors.length > 0) {
             return res.status(400).json({ error: pwErrors.join(", ") });
         }
 
-        // Check duplicates
-        const existingUser = await User.findOne({
-            $or: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }],
-        });
-        if (existingUser) {
-            if (existingUser.username === username.toLowerCase()) {
-                return res.status(400).json({ error: "Username already taken" });
-            }
-            return res.status(400).json({ error: "Email already registered" });
+        // Check if email already exists → signal frontend to redirect to login
+        const emailExists = await User.findOne({ email: email.toLowerCase() });
+        if (emailExists) {
+            return res.status(409).json({ error: "Email already registered", redirect: "/login" });
+        }
+
+        // Check if username already taken → suggest alternatives
+        const usernameExists = await User.findOne({ username: username.toLowerCase() });
+        if (usernameExists) {
+            const suggestions = generateUsernameSuggestions(username);
+            return res.status(400).json({
+                error: "Username already taken",
+                suggestions,
+            });
         }
 
         const hashedPassword = await bcrypt.hash(password, 12);
-        const user = await User.create({
-            displayName,
+        await User.create({
+            displayName: displayName.trim(),
             username: username.toLowerCase(),
             email: email.toLowerCase(),
             password: hashedPassword,
@@ -56,25 +76,25 @@ const signup = async (req, res) => {
 
         res.status(201).json({ message: "Account created successfully" });
     } catch (err) {
-        console.error("Signup error:", err);
+        console.error("Signup error:", err.message, err.stack);
         res.status(500).json({ error: "Server error during signup" });
     }
 };
 
-// @POST /api/auth/login
+// @POST /api/auth/login  (login with email + password)
 const login = async (req, res) => {
     try {
-        const { username, password } = req.body;
-        if (!username || !password) {
-            return res.status(400).json({ error: "Username and password required" });
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required" });
         }
 
-        const user = await User.findOne({ username: username.toLowerCase() });
-        if (!user) return res.status(400).json({ error: "Invalid credentials" });
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(400).json({ error: "No account found with this email" });
         if (user.isBanned) return res.status(403).json({ error: "Account has been banned" });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+        if (!isMatch) return res.status(400).json({ error: "Incorrect password" });
 
         // Update login stats
         user.loginCount += 1;
@@ -100,18 +120,18 @@ const login = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error("Login error:", err);
+        console.error("Login error:", err.message);
         res.status(500).json({ error: "Server error during login" });
     }
 };
 
-// @POST /api/auth/admin-login
+// @POST /api/auth/admin-login  (admin: email admin@123 / password admin@123)
 const adminLogin = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { email, password } = req.body;
 
         // Hardcoded admin credentials
-        if (username === "admin123" && password === "admin123") {
+        if (email === "admin@123" && password === "admin@123") {
             const token = jwt.sign(
                 { id: "admin", isAdmin: true },
                 process.env.JWT_SECRET,
@@ -122,14 +142,15 @@ const adminLogin = async (req, res) => {
                 user: {
                     id: "admin",
                     displayName: "Administrator",
-                    username: "admin123",
+                    username: "admin",
+                    email: "admin@123",
                     isAdmin: true,
                 },
             });
         }
 
-        // Also allow DB admin users
-        const user = await User.findOne({ username: username.toLowerCase(), isAdmin: true });
+        // Also allow DB admin users by email
+        const user = await User.findOne({ email: email.toLowerCase(), isAdmin: true });
         if (!user) return res.status(400).json({ error: "Invalid admin credentials" });
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -151,6 +172,7 @@ const adminLogin = async (req, res) => {
             },
         });
     } catch (err) {
+        console.error("Admin login error:", err.message);
         res.status(500).json({ error: "Server error" });
     }
 };

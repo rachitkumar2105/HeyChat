@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 export default function AdminLoginPage() {
     const { adminLogin } = useAuth();
     const navigate = useNavigate();
-    const [form, setForm] = useState({ username: '', password: '' });
+    const [form, setForm] = useState({ email: '', password: '' });
     const [showPw, setShowPw] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
         setError('');
         setLoading(true);
         try {
-            await adminLogin(form.username, form.password);
+            await adminLogin(form.email, form.password);
             navigate('/admin');
         } catch (err) {
             setError(err.response?.data?.error || 'Invalid admin credentials');
@@ -39,13 +39,13 @@ export default function AdminLoginPage() {
                 <div className="bg-gray-800 rounded-2xl border border-gray-700 p-8 shadow-2xl">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Admin Username</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Admin Email</label>
                             <input
-                                type="text"
+                                type="email"
                                 className="w-full bg-gray-700 border border-gray-600 focus:border-amber-500 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all placeholder-gray-500"
-                                placeholder="admin123"
-                                value={form.username}
-                                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                                placeholder="admin@123"
+                                value={form.email}
+                                onChange={(e) => setForm({ ...form, email: e.target.value })}
                                 required
                             />
                         </div>

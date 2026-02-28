@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 export default function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
-    const [form, setForm] = useState({ username: '', password: '' });
+    const [form, setForm] = useState({ email: '', password: '' });
     const [showPw, setShowPw] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -16,10 +16,10 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            const user = await login(form.username, form.password);
+            const user = await login(form.email, form.password);
             navigate(user.isAdmin ? '/admin' : '/chat');
         } catch (err) {
-            setError(err.response?.data?.error || 'Login failed');
+            setError(err.response?.data?.error || 'Login failed. Please check your email and password.');
         } finally {
             setLoading(false);
         }
@@ -40,20 +40,27 @@ export default function LoginPage() {
                 {/* Card */}
                 <div className="card p-8">
                     <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Email */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Username</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                Email
+                            </label>
                             <input
-                                type="text"
+                                type="email"
                                 className="input-field"
-                                placeholder="Enter your username"
-                                value={form.username}
-                                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                                placeholder="you@example.com"
+                                value={form.email}
+                                onChange={(e) => setForm({ ...form, email: e.target.value })}
                                 required
                                 autoFocus
                             />
                         </div>
+
+                        {/* Password */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                Password
+                            </label>
                             <div className="relative">
                                 <input
                                     type={showPw ? 'text' : 'password'}
@@ -76,6 +83,11 @@ export default function LoginPage() {
                         {error && (
                             <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-800">
                                 {error}
+                                {error.includes('No account') && (
+                                    <span className="block mt-1">
+                                        <Link to="/signup" className="font-semibold underline">Create an account</Link> instead.
+                                    </span>
+                                )}
                             </div>
                         )}
 

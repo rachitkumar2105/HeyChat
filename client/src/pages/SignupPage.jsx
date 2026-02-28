@@ -12,6 +12,7 @@ export default function SignupPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
 
     const pwRules = validatePassword(form.password);
     const allValid = pwRules.every((r) => r.valid);
@@ -19,16 +20,33 @@ export default function SignupPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setSuggestions([]);
+
         if (!isEmailValid(form.email)) { setError('Invalid email format'); return; }
         if (!allValid) { setError('Password does not meet all requirements'); return; }
+        if (!/^[a-z0-9_]{3,20}$/.test(form.username)) {
+            setError('Username: 3-20 chars, letters/numbers/underscores only');
+            return;
+        }
 
         setLoading(true);
         try {
             await signup(form);
-            setSuccess('Account created! Redirecting to login...');
+            setSuccess('Account created! Redirecting to sign in...');
             setTimeout(() => navigate('/login'), 1500);
         } catch (err) {
-            setError(err.response?.data?.error || 'Signup failed');
+            const data = err.response?.data;
+            if (data?.redirect) {
+                // Email already registered → redirect to login
+                setError('This email is already registered. Redirecting you to Sign In...');
+                setTimeout(() => navigate('/login'), 2000);
+            } else if (data?.suggestions) {
+                // Username taken → show suggestions
+                setError(`${data.error}. Try one of these:`);
+                setSuggestions(data.suggestions);
+            } else {
+                setError(data?.error || 'Signup failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -47,28 +65,55 @@ export default function SignupPage() {
 
                 <div className="card p-8">
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Display Name */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Display Name</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                Display Name <span className="text-gray-400 text-xs">(visible to others)</span>
+                            </label>
                             <input
                                 type="text"
                                 className="input-field"
-                                placeholder="Your full name"
+                                placeholder="e.g. Rachit Kumar Singh"
                                 value={form.displayName}
                                 onChange={(e) => setForm({ ...form, displayName: e.target.value })}
                                 required
                             />
                         </div>
+
+                        {/* Username */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Username</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                Username <span className="text-gray-400 text-xs">(unique · 3-20 chars)</span>
+                            </label>
                             <input
                                 type="text"
                                 className="input-field"
-                                placeholder="Unique username (lowercase)"
+                                placeholder="e.g. rachitkr2105"
                                 value={form.username}
-                                onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })}
+                                onChange={(e) => {
+                                    setSuggestions([]);
+                                    setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') });
+                                }}
                                 required
                             />
+                            {/* Username suggestions */}
+                            {suggestions.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {suggestions.map((s) => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            onClick={() => { setForm({ ...form, username: s }); setSuggestions([]); setError(''); }}
+                                            className="text-xs px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full hover:bg-primary-200 transition"
+                                        >
+                                            @{s}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
+
+                        {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
                             <input
@@ -80,6 +125,8 @@ export default function SignupPage() {
                                 required
                             />
                         </div>
+
+                        {/* Password */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
                             <div className="relative">
@@ -99,7 +146,6 @@ export default function SignupPage() {
                                     {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
-
                             {/* Live password validation */}
                             {form.password && (
                                 <div className="mt-3 space-y-1.5 p-3 bg-gray-50 dark:bg-dark-700 rounded-xl">
