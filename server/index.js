@@ -136,7 +136,14 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
+
+console.log(`📡 Attempting to start server on port ${PORT}...`);
+console.log(`🌍 Client URL: ${process.env.CLIENT_URL || "Not set (allowing all)"}`);
+console.log(`🔐 JWT Secret length: ${process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0}`);
+
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 HeyChat server running on port ${PORT}`);
+  console.log(`🚀 HeyChat server fully operational!`);
+  console.log(`🔗 Local URL: http://localhost:${PORT}`);
+  console.log(`📁 Static files (uploads): ${uploadsDir}`);
 });
