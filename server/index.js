@@ -12,6 +12,9 @@ const multer = require("multer");
 const app = express();
 const server = http.createServer(app);
 
+// Enable trust proxy for Hugging Face / Vercel proxies
+app.set("trust proxy", 1);
+
 // ─── Socket.io ─────────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: {

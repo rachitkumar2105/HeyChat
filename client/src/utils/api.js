@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: (import.meta.env.VITE_BACKEND_URL || '') + '/api',
+    baseURL: (import.meta.env.VITE_BACKEND_URL || 'https://rachitkumar2105-heychat-backend.hf.space') + '/api',
     headers: { 'Content-Type': 'application/json' },
 });
 

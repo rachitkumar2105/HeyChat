@@ -27,6 +27,11 @@ const generateUsernameSuggestions = (username) => {
 // @POST /api/auth/signup
 const signup = async (req, res) => {
     try {
+        // Check DB connection status first
+        if (require("mongoose").connection.readyState !== 1) {
+            return res.status(503).json({ error: "Database temporarily unavailable. Please check MongoDB whitelisting/status." });
+        }
+
         const { displayName, username, email, password } = req.body;
 
         if (!displayName || !username || !email || !password) {
@@ -84,6 +89,11 @@ const signup = async (req, res) => {
 // @POST /api/auth/login  (login with email + password)
 const login = async (req, res) => {
     try {
+        // Check DB connection status
+        if (require("mongoose").connection.readyState !== 1) {
+            return res.status(503).json({ error: "Database temporarily unavailable." });
+        }
+
         const { email, password } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: "Email and password are required" });
