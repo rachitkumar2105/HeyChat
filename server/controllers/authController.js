@@ -383,4 +383,55 @@ const verifyEmail = async (req, res) => {
     }
 };
 
-module.exports = { signup, login, adminLogin, getMe, verifyEmail };
+// @POST /api/auth/resend-verification
+const resendVerification = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: "Email is required" });
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        if (user.isVerified) {
+            return res.status(400).json({ error: "Account is already verified" });
+        }
+
+        // Generate new verification token
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const verificationTokenExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+        user.verificationToken = verificationToken;
+        user.verificationTokenExpire = verificationTokenExpire;
+        await user.save();
+
+        // Send verification email
+        const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        const message = `Please verify your email by clicking the link below:\n\n${verifyUrl}\n\nThis link will expire in 24 hours.`;
+        const html = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                <h2 style="color: #075e54;">Verify your HeyChat Account</h2>
+                <p>Hi ${user.displayName},</p>
+                <p>You requested a new verification link. Please click below to activate your account:</p>
+                <a href="${verifyUrl}" style="display: inline-block; padding: 10px 20px; background-color: #075e54; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">Verify Email Address</a>
+                <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                <p>${verifyUrl}</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #888;">This link will expire in 24 hours.</p>
+            </div>
+        `;
+
+        await sendEmail({
+            email: user.email,
+            subject: "Verify your HeyChat Account",
+            message,
+            html,
+        });
+
+        res.json({ message: "Verification email resent! Please check your inbox." });
+    } catch (err) {
+        console.error("Resend verification error:", err.message);
+        res.status(500).json({ error: "Server error during resending verification" });
+    }
+};
+
+module.exports = { signup, login, adminLogin, getMe, verifyEmail, resendVerification };
