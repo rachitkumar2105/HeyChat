@@ -105,17 +105,19 @@ const signup = async (req, res) => {
         `;
 
         try {
+            console.log(`[AUTH] Sending verification email to ${user.email}...`);
             await sendEmail({
                 email: user.email,
                 subject: "Verify your HeyChat Account",
                 message,
                 html,
             });
+            console.log(`[AUTH] Verification email sent to ${user.email}`);
             res.status(201).json({ message: "Account created! Please check your email to verify your account." });
         } catch (emailErr) {
-            console.error("Email send failed:", emailErr);
+            console.error(`[AUTH] ERROR: Email send failed for ${user.email}:`, emailErr.message);
             // We still created the user, but they'll need a way to resend verification later if needed
-            res.status(201).json({ message: "Account created, but verification email failed to send. Please contact support or try logging in to resend." });
+            res.status(201).json({ message: "Account created, but verification email failed to send. Please check your Gmail App Password configuration." });
         }
     } catch (err) {
         console.error("Signup error:", err.message, err.stack);
@@ -145,6 +147,7 @@ const login = async (req, res) => {
 
         // Check verification
         if (!user.isVerified) {
+            console.warn(`[AUTH] Login blocked: User ${user.email} is not verified.`);
             return res.status(401).json({ error: "Please verify your email to log in." });
         }
 
@@ -313,6 +316,31 @@ const verifyEmail = async (req, res) => {
         user.verificationToken = undefined;
         user.verificationTokenExpire = undefined;
         await user.save();
+
+        console.log(`[AUTH] User ${user.email} verified successfully.`);
+
+        // Send Welcome Email
+        const welcomeMessage = `Welcome to HeyChat, ${user.displayName}!\n\nYour account is now fully verified and ready to use. Start chatting with your friends now!`;
+        const welcomeHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                <h2 style="color: #075e54;">Registration Successful!</h2>
+                <p>Hi ${user.displayName},</p>
+                <p>Welcome to <b>HeyChat</b>! Your email has been verified, and your account is now active.</p>
+                <p>You can now start sending messages, sharing media, and more.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.CLIENT_URL}/login" style="display: inline-block; padding: 12px 24px; background-color: #075e54; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Login to Start Chatting</a>
+                </div>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #888;">Thank you for joining our community!</p>
+            </div>
+        `;
+
+        sendEmail({
+            email: user.email,
+            subject: "Welcome to HeyChat - Registration Success!",
+            message: welcomeMessage,
+            html: welcomeHtml,
+        }).catch(err => console.error(`[AUTH] Welcome email failed for ${user.email}:`, err.message));
 
         res.send(`
             <div style="font-family: sans-serif; text-align: center; padding-top: 50px;">
