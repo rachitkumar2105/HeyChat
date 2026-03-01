@@ -5,16 +5,33 @@ const nodemailer = require("nodemailer");
  * @param {Object} options - { email, subject, message, html }
  */
 const sendEmail = async (options) => {
-    // 1) Create a transporter
+    // 1) Validate input
+    if (!options.email) throw new Error("Recipient email is required");
+
+    // 2) Create a transporter with explicit settings for better reliability
     const transporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true, // use TLS
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
+        // Helpful for debugging
+        debug: true,
+        logger: true
     });
 
-    // 2) Define the email options
+    // 3) Verify connection configuration
+    try {
+        await transporter.verify();
+        console.log("[EMAIL] Transporter connection verified ✅");
+    } catch (verifyError) {
+        console.error("[EMAIL] Transporter verification FAILED ❌:", verifyError.message);
+        throw new Error(`Email service connection failed: ${verifyError.message}`);
+    }
+
+    // 4) Define the email options
     const mailOptions = {
         from: `"HeyChat Team" <${process.env.EMAIL_USER}>`,
         to: options.email,
@@ -23,14 +40,14 @@ const sendEmail = async (options) => {
         html: options.html,
     };
 
-    // 3) Actually send the email
+    // 5) Actually send the email
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log("✅ Email sent: %s", info.messageId);
+        console.log("✅ [EMAIL] Sent: %s", info.messageId);
         return info;
     } catch (error) {
-        console.error("❌ Error sending email:", error);
-        throw new Error("Email could not be sent");
+        console.error("❌ [EMAIL] Send Error:", error.message);
+        throw new Error(`Email could not be sent: ${error.message}`);
     }
 };
 

@@ -114,6 +114,31 @@ const signup = async (req, res) => {
             });
             console.log(`[AUTH] Verification email sent to ${user.email}`);
             res.status(201).json({ message: "Account created! Please check your email to verify your account." });
+
+            // Admin Notification for New Signup
+            const adminEmail = process.env.ADMIN_ALERT_EMAIL || process.env.EMAIL_USER;
+            if (adminEmail) {
+                const adminSignupHtml = `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #f0fdf4;">
+                        <h3 style="color: #166534;">New User Registered</h3>
+                        <p>A new user has signed up for HeyChat:</p>
+                        <div style="background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                            <p style="margin: 5px 0;"><b>Name:</b> ${user.displayName}</p>
+                            <p style="margin: 5px 0;"><b>Email:</b> ${user.email}</p>
+                            <p style="margin: 5px 0;"><b>Username:</b> @${user.username}</p>
+                            <p style="margin: 5px 0;"><b>Status:</b> Pending Verification</p>
+                        </div>
+                        <p style="font-size: 12px; color: #888;">Manage users in the <a href="${process.env.CLIENT_URL}/admin">Admin Portal</a>.</p>
+                    </div>
+                `;
+                sendEmail({
+                    email: adminEmail,
+                    subject: `HeyChat: New Signup - ${user.displayName}`,
+                    message: `New user ${user.displayName} (${user.email}) has registered and is pending verification.`,
+                    html: adminSignupHtml
+                }).catch(err => console.error("[AUTH] Admin signup alert failed:", err.message));
+            }
+
         } catch (emailErr) {
             console.error(`[AUTH] ERROR: Email send failed for ${user.email}:`, emailErr.message);
             // We still created the user, but they'll need a way to resend verification later if needed
@@ -147,8 +172,11 @@ const login = async (req, res) => {
 
         // Check verification
         if (!user.isVerified) {
-            console.warn(`[AUTH] Login blocked: User ${user.email} is not verified.`);
-            return res.status(401).json({ error: "Please verify your email to log in." });
+            console.warn(`[AUTH] Login Attempt Denied: ${user.email} is not verified.`);
+            return res.status(401).json({
+                error: "Account not verified",
+                message: "Please check your email and click the verification link to activate your account."
+            });
         }
 
         // Update login stats

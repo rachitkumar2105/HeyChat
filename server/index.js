@@ -9,6 +9,15 @@ const { Server } = require("socket.io");
 const path = require("path");
 const multer = require("multer");
 
+// ─── Environment Verification ───────────────────────────────────────────────
+const requiredEnv = ["MONGO_URI", "JWT_SECRET", "EMAIL_USER", "EMAIL_PASS"];
+const missingEnv = requiredEnv.filter(key => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error("❌ CRITICAL ERROR: Missing environment variables:", missingEnv.join(", "));
+  console.error("Please update your .env file or project settings.");
+  // Don't exit here to allow the server to show "Healthy" but log errors
+}
+
 const app = express();
 const server = http.createServer(app);
 
