@@ -136,8 +136,8 @@ export default function AdminPage() {
                             key={t.id}
                             onClick={() => setTab(t.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${tab === t.id
-                                    ? 'bg-amber-500 text-white shadow-sm'
-                                    : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 border border-gray-100 dark:border-dark-700'
+                                ? 'bg-amber-500 text-white shadow-sm'
+                                : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 border border-gray-100 dark:border-dark-700'
                                 }`}
                         >
                             <t.icon className="w-4 h-4" />
@@ -175,8 +175,9 @@ export default function AdminPage() {
                                     <thead>
                                         <tr className="bg-gray-50 dark:bg-dark-700">
                                             <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                                            <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Email</th>
-                                            <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Last Active</th>
+                                            <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Account</th>
+                                            <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Logins</th>
+                                            <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Activity</th>
                                             <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                             <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                                         </tr>
@@ -190,14 +191,29 @@ export default function AdminPage() {
                                                         <p className="text-xs text-gray-400">@{u.username}</p>
                                                     </div>
                                                 </td>
-                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-400 hidden md:table-cell">{u.email}</td>
-                                                <td className="px-5 py-3 text-gray-400 text-xs hidden lg:table-cell">{formatLastSeen(u.lastActive)}</td>
+                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-400 hidden md:table-cell">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs truncate max-w-[150px]">{u.email}</span>
+                                                        <span className={`text-[10px] w-fit font-bold uppercase ${u.isVerified ? 'text-green-500' : 'text-amber-500'}`}>
+                                                            {u.isVerified ? '● Verified' : '○ Unverified'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-400 hidden lg:table-cell font-mono text-xs">
+                                                    {u.loginCount || 0}
+                                                </td>
+                                                <td className="px-5 py-3 text-gray-400 text-xs hidden sm:table-cell">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span>Active: {formatLastSeen(u.lastActive)}</span>
+                                                        <span>Login: {u.lastLogin ? formatLastSeen(u.lastLogin) : 'Never'}</span>
+                                                    </div>
+                                                </td>
                                                 <td className="px-5 py-3">
-                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${u.isBanned
-                                                            ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                                                            : 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-tight ${u.isBanned
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-primary-500 text-white'
                                                         }`}>
-                                                        {u.isBanned ? '🚫 Banned' : '✓ Active'}
+                                                        {u.isBanned ? 'Banned' : 'Active'}
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-3">
@@ -205,8 +221,8 @@ export default function AdminPage() {
                                                         <button
                                                             onClick={() => handleBan(u._id)}
                                                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${u.isBanned
-                                                                    ? 'bg-green-100 dark:bg-green-900/20 text-green-600 hover:bg-green-200'
-                                                                    : 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-200'
+                                                                ? 'bg-green-100 dark:bg-green-900/20 text-green-600 hover:bg-green-200'
+                                                                : 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-200'
                                                                 }`}
                                                         >
                                                             <Ban className="w-3.5 h-3.5" />
@@ -254,8 +270,8 @@ export default function AdminPage() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                                                            r.status === 'reviewed' ? 'bg-green-100 text-green-600' :
-                                                                'bg-gray-100 text-gray-500'
+                                                        r.status === 'reviewed' ? 'bg-green-100 text-green-600' :
+                                                            'bg-gray-100 text-gray-500'
                                                         }`}>
                                                         {r.status}
                                                     </span>

@@ -46,6 +46,9 @@ const userSchema = new mongoose.Schema(
     blocked: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     loginCount: { type: Number, default: 0 },
     lastLogin: { type: Date },
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String },
+    verificationTokenExpire: { type: Date },
   },
   { timestamps: true }
 );
