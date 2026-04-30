@@ -175,10 +175,7 @@ create policy "profiles_insert" on profiles for insert
 -- You can only see chats you are a member of
 create policy "chats_select" on chats for select
   using (
-    exists (
-      select 1 from chat_members
-      where chat_id = chats.id and user_id = auth.uid()
-    )
+    id in (select get_my_chat_ids())
   );
 
 -- Anyone logged in can create a chat
@@ -200,10 +197,7 @@ create policy "chats_update" on chats for update
 -- ── CHAT MEMBERS POLICIES ──────────────────────────────────
 create policy "chat_members_select" on chat_members for select
   using (
-    exists (
-      select 1 from chat_members cm2
-      where cm2.chat_id = chat_members.chat_id and cm2.user_id = auth.uid()
-    )
+    chat_id in (select get_my_chat_ids())
   );
 
 create policy "chat_members_insert" on chat_members for insert
@@ -223,10 +217,7 @@ create policy "chat_members_delete" on chat_members for delete
 -- Only chat members can read messages
 create policy "messages_select" on messages for select
   using (
-    exists (
-      select 1 from chat_members
-      where chat_id = messages.chat_id and user_id = auth.uid()
-    )
+    chat_id in (select get_my_chat_ids())
     -- Block: you cannot see messages from someone who blocked you
     and not exists (
       select 1 from blocks
@@ -334,6 +325,18 @@ create policy "notifications_select" on notifications for select
 
 create policy "notifications_update" on notifications for update
   using (auth.uid() = user_id);
+
+-- ============================================================
+-- HELPER FUNCTION: Prevent Infinite Recursion for RLS
+-- ============================================================
+create or replace function get_my_chat_ids()
+returns setof uuid
+language sql
+security definer
+set search_path = public
+as $$
+  select chat_id from chat_members where user_id = auth.uid();
+$$;
 
 -- ============================================================
 -- HELPER FUNCTION: Find existing DM chat between 2 users

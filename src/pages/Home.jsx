@@ -54,7 +54,12 @@ export default function Home() {
       `)
       .eq('user_id', user.id)
 
-    if (!error && data) {
+    if (error) {
+      console.error('Failed to fetch chats:', error)
+      return
+    }
+
+    if (data) {
       const chatList = data
         .map((item) => item.chats)
         .filter(Boolean)
