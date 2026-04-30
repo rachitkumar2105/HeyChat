@@ -39,7 +39,14 @@ export function useMessages(chatId) {
             setMessages((prev) => {
               // Don't add duplicates
               if (prev.find((m) => m.id === payload.new.id)) return prev
-              return [...prev, payload.new]
+              
+              // Try to find sender from existing messages to avoid extra fetch
+              const existingMsgFromSender = prev.find(m => m.sender_id === payload.new.sender_id && m.sender)
+              const newMessage = {
+                ...payload.new,
+                sender: existingMsgFromSender ? existingMsgFromSender.sender : null
+              }
+              return [...prev, newMessage]
             })
             // Mark as delivered if it's not from me
             if (payload.new.sender_id !== user?.id) {

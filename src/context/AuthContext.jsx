@@ -16,27 +16,40 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check if someone is already logged in when app starts
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      setLoading(false)
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      try {
+        if (error) throw error
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await fetchProfile(session.user.id, session)
+        }
+      } catch (err) {
+        console.error('Session error:', err)
+      } finally {
+        setLoading(false)
+      }
     })
 
     // Listen for login/logout events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          fetchProfile(session.user.id)
-          // Mark user as online
-          await supabase.from('profiles').update({
-            is_online: true,
-            last_seen: new Date().toISOString(),
-          }).eq('id', session.user.id)
-        } else {
-          setProfile(null)
+        try {
+          setUser(session?.user ?? null)
+          if (session?.user) {
+            await fetchProfile(session.user.id, session)
+            // Mark user as online
+            await supabase.from('profiles').update({
+              is_online: true,
+              last_seen: new Date().toISOString(),
+            }).eq('id', session.user.id)
+          } else {
+            setProfile(null)
+          }
+        } catch (err) {
+          console.error('Auth state change error:', err)
+        } finally {
+          setLoading(false)
         }
-        setLoading(false)
       }
     )
 
@@ -58,13 +71,30 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const fetchProfile = async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
+  const fetchProfile = async (userId, session) => {
+    try {
+      let { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+        
+      if (!data && session?.user) {
+        // Auto-recover missing profile
+        const newProfile = {
+          id: userId,
+          username: session.user.email.split('@')[0] + Math.floor(Math.random() * 1000),
+          full_name: 'HeyChat User',
+          is_online: true
+        }
+        await supabase.from('profiles').insert(newProfile)
+        data = newProfile
+      }
+      setProfile(data)
+    } catch (err) {
+      console.error('Error fetching profile:', err)
+      setProfile(null)
+    }
   }
 
   const signUp = async (email, password, username, fullName) => {
@@ -129,7 +159,7 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     updateProfile,
-    fetchProfile: () => fetchProfile(user?.id),
+    fetchProfile: () => fetchProfile(user?.id, { user }),
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

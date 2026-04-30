@@ -53,7 +53,6 @@ export default function Home() {
         )
       `)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
 
     if (!error && data) {
       const chatList = data
