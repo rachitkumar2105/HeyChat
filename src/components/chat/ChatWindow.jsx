@@ -2,17 +2,16 @@
 // The RIGHT panel - the actual conversation!
 // Shows messages, input box, and all chat features
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useMessages } from '../../hooks/useMessages'
-import { supabase } from '../../lib/supabaseClient'
 import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import ChatHeader from './ChatHeader'
 import toast from 'react-hot-toast'
 
 export default function ChatWindow({ chat, onBack, isMobile, onChatsRefresh }) {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const { messages, loading, sendMessage, deleteMessage, clearChat, addReaction } = useMessages(chat.id)
   const messagesEndRef = useRef(null) // Reference to bottom of messages
 

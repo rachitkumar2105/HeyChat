@@ -66,6 +66,7 @@ export function useMessages(chatId) {
         supabase.removeChannel(subscriptionRef.current)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, user?.id])
 
   const fetchMessages = async () => {

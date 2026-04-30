@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
       subscription.unsubscribe()
       window.removeEventListener('beforeunload', handleOffline)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchProfile = async (userId) => {

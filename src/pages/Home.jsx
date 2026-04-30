@@ -35,6 +35,7 @@ export default function Home() {
         supabase.removeChannel(chatChannel)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const fetchChats = async () => {

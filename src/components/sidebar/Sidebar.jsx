@@ -3,7 +3,6 @@
 // Like the contacts list in WhatsApp
 
 import React, { useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -138,7 +137,7 @@ export default function Sidebar({ chats, selectedChatId, onSelectChat, onStartNe
 
 // Individual chat item in the list
 function ChatItem({ chat, isSelected, onClick }) {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
 
   // For DMs, get the OTHER person's info (not yours)
   const otherMember = chat.chat_members?.find((m) => m.user_id !== user?.id)
