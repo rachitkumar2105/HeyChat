@@ -1,42 +1,14 @@
 {
-  "name": "chatapp",
-  "version": "1.0.0",
+  "name": "heychat",
   "private": true,
-  "dependencies": {
-    "@csstools/normalize.css": "^10.1.0",
-    "@emoji-mart/data": "^1.1.2",
-    "@emoji-mart/react": "^1.1.1",
-    "@supabase/supabase-js": "^2.39.0",
-    "date-fns": "^3.3.1",
-    "emoji-mart": "^5.5.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.22.0",
-    "react-scripts": "5.0.1",
-    "sanitize.css": "^13.0.0"
-  },
+  "description": "HeyChat: real-time one-to-one messaging with images and voice notes",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "install:all": "npm --prefix backend ci && npm --prefix frontend ci",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "test": "npm --prefix backend test",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  }
+  "engines": { "node": ">=20" }
 }

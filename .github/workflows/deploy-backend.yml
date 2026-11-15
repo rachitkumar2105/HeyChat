@@ -1,0 +1,51 @@
+name: Deploy backend to Hugging Face
+
+# Pushes the backend/ folder to the Space repo, which rebuilds the Docker image.
+# Needs a repository secret HF_TOKEN (a Hugging Face access token with write access).
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/deploy-backend.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
+
+env:
+  HF_SPACE: rachitkumar2105/heychat-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for token
+        id: token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN secret is not set; skipping deploy."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.skip != 'true'
+      - name: Push backend/ to the Space
+        if: steps.token.outputs.skip != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git clone --depth 1 "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" space
+          find space -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -r backend/. space/
+          rm -rf space/node_modules space/dist space/.data space/.env
+          cd space
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Deploy ${GITHUB_SHA::7} from GitHub"
+          git push origin HEAD:main
