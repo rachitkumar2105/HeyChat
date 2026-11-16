@@ -14,7 +14,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://rachitkumar2105-heychat-api.hf.space https://qdwhtgsgpiajubjyltmc.supabase.co; media-src 'self' blob: https://rachitkumar2105-heychat-api.hf.space https://qdwhtgsgpiajubjyltmc.supabase.co; connect-src 'self' https://rachitkumar2105-heychat-api.hf.space wss://rachitkumar2105-heychat-api.hf.space; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://heychat-api.onrender.com https://qdwhtgsgpiajubjyltmc.supabase.co; media-src 'self' blob: https://heychat-api.onrender.com https://qdwhtgsgpiajubjyltmc.supabase.co; connect-src 'self' https://heychat-api.onrender.com wss://heychat-api.onrender.com; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
         },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
