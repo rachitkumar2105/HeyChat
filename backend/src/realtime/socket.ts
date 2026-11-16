@@ -46,14 +46,9 @@ export function attachRealtime(ctx: AppContext, http: HttpServer) {
     }
   }
 
-  const partnerCache = new Map<string, { ids: string[]; at: number }>();
-  async function partnersOf(userId: string): Promise<string[]> {
-    const hit = partnerCache.get(userId);
-    if (hit && Date.now() - hit.at < 60_000) return hit.ids;
-    const ids = await db.call<string[]>('hc_partner_ids', { p_user: userId });
-    partnerCache.set(userId, { ids, at: Date.now() });
-    return ids;
-  }
+  // Not cached: chats are created all the time and a stale list would hide presence changes
+  // from brand-new contacts. This runs once per connect/disconnect, which is cheap.
+  const partnersOf = (userId: string) => db.call<string[]>('hc_partner_ids', { p_user: userId });
 
   async function announce(userId: string, online: boolean, lastSeenAt: string | null) {
     try {

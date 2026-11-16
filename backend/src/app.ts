@@ -53,7 +53,7 @@ export function createApp(ctx: AppContext) {
     res.json({ name: 'HeyChat API', status: 'ok', docs: 'https://github.com/rachitkumar2105/HeyChat' });
   });
 
-  app.get('/health', async (_req, res) => {
+  app.get('/health', corsMw, async (_req, res) => {
     const db = await ctx.db.ping();
     res.status(db ? 200 : 503).json({
       status: db ? 'ok' : 'degraded',

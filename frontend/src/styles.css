@@ -22,6 +22,9 @@
   --online: #2f9e6e;
   --focus: #e08a00;
   --chat-bg: #efe6d4;
+  --logo: var(--ink);
+  --active-row: #dfe9e2;
+  --mic: var(--ink-2);
   --dot: rgb(19 38 31 / 0.06);
   --shadow-1: 0 1px 0 rgb(19 38 31 / 0.06), 0 1px 3px rgb(19 38 31 / 0.08);
   --shadow-2: 0 12px 32px rgb(19 38 31 / 0.16), 0 2px 6px rgb(19 38 31 / 0.08);
@@ -54,6 +57,9 @@
     --peer-text: #e8ede9;
     --danger: #e0715c;
     --chat-bg: #111b17;
+    --logo: #e8ede9;
+    --active-row: #1f3a31;
+    --mic: #2e7d68;
     --dot: rgb(255 255 255 / 0.035);
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-2: 0 12px 32px rgb(0 0 0 / 0.5);
@@ -233,7 +239,7 @@ img {
   transform: scale(0.94);
 }
 .mic-btn {
-  background: var(--ink-2);
+  background: var(--mic);
 }
 
 /* ---------------------------------------------------------------- spinner */
@@ -408,7 +414,7 @@ img {
 }
 .brand-light {
   color: #f3efe6;
-  --ink: #f3efe6;
+  --logo: #f3efe6;
 }
 .auth-panel {
   display: grid;
@@ -661,7 +667,7 @@ img {
   background: var(--surface-2);
 }
 .chat-item.is-active {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: var(--active-row);
 }
 .chat-item-body {
   flex: 1;
