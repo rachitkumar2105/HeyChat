@@ -16,9 +16,9 @@ export function createApp(ctx: AppContext) {
   const startedAt = Date.now();
 
   app.disable('x-powered-by');
-  // Hugging Face terminates TLS in front of the container; trust exactly one proxy hop
-  // so rate limiting keys on the real client IP without letting clients spoof it.
-  app.set('trust proxy', 1);
+  // The host's load balancer terminates TLS in front of the container. Trust exactly that many
+  // proxy hops so rate limiting keys on the real client IP without letting clients spoof it.
+  app.set('trust proxy', ctx.config.trustProxy);
 
   app.use(
     pinoHttp({

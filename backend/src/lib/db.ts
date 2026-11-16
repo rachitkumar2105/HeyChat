@@ -5,8 +5,8 @@ export type DbArgs = Record<string, unknown>;
 
 /**
  * Every query is a call to one hc_* Postgres function (see supabase/schema.sql).
- * Production calls them over HTTPS through Supabase's REST endpoint (Hugging Face Spaces
- * only allow outbound 80/443, so a direct Postgres connection is not an option).
+ * Production calls them over HTTPS through Supabase's REST endpoint, so the API works on
+ * hosts that only allow outbound 80/443 and never holds a pool of Postgres connections.
  * Tests call the exact same functions on a local Postgres through `pg`.
  */
 export interface Db {

@@ -1,0 +1,22 @@
+# Render Blueprint: creates the HeyChat API web service from this repo.
+# The Supabase secret key is entered in the Render dashboard (sync: false), never committed.
+services:
+  - type: web
+    name: heychat-api
+    runtime: docker
+    plan: free
+    region: virginia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        value: https://qdwhtgsgpiajubjyltmc.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

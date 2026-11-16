@@ -34,7 +34,7 @@ function Privacy() {
       </p>
       <h2>Where data is processed</h2>
       <p>
-        The app runs on Vercel (website), Hugging Face Spaces (server) and Supabase (database and file storage, United States region).
+        The app runs on Vercel (website), Render (server) and Supabase (database and file storage, United States region).
       </p>
       <h2>Your controls</h2>
       <ul>

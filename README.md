@@ -3,12 +3,12 @@
 A real-time, one-to-one messenger for text, photos and voice notes. It works on phones, tablets and desktops.
 
 - **Frontend:** React 19 + TypeScript + Vite, deployed on Vercel
-- **Backend:** Node.js + Express 5 + Socket.IO + TypeScript, deployed as a Docker Space on Hugging Face
+- **Backend:** Node.js + Express 5 + Socket.IO + TypeScript, deployed as a Docker web service on Render
 - **Data:** Supabase Postgres (all logic in SQL functions) and Supabase Storage (private bucket)
 
 ```mermaid
 flowchart LR
-  B[Browser<br/>React SPA on Vercel] -- HTTPS REST + Bearer JWT --> A[HeyChat API<br/>Express + Socket.IO<br/>HF Docker Space]
+  B[Browser<br/>React SPA on Vercel] -- HTTPS REST + Bearer JWT --> A[HeyChat API<br/>Express + Socket.IO<br/>Docker on Render]
   B <-- WebSocket events --> A
   A -- HTTPS RPC, service key --> P[(Supabase Postgres<br/>hc_* functions, RLS locked)]
   A -- upload / sign --> S[(Supabase Storage<br/>private bucket)]
@@ -45,10 +45,11 @@ flowchart LR
 ## Repository layout
 
 ```
-backend/    Express + Socket.IO API (TypeScript), Dockerfile for Hugging Face
+backend/    Express + Socket.IO API (TypeScript) and its Dockerfile
 frontend/   React SPA (TypeScript, Vite), vercel.json with security headers
 supabase/   schema.sql: tables, indexes, RLS lockdown, hc_* functions, storage bucket
-.github/    CI (tests against real Postgres) and auto-deploy of backend/ to the Space
+.github/    CI: API tests against real Postgres, frontend build, dependency audit
+render.yaml Render Blueprint for the API service
 ```
 
 ## Running locally
@@ -81,10 +82,10 @@ cd backend && TEST_DATABASE_URL=postgres://localhost/heychat_test npm test
 ## Deploying
 
 1. **Supabase:** create a project, open the SQL editor, run `supabase/schema.sql`.
-2. **Hugging Face:** create a Docker Space (for example `heychat-api`). Add the secrets `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, and the variable `CORS_ORIGINS=https://<your-app>.vercel.app`. Push the contents of `backend/` to it. The included GitHub Action does this on every push once you add an `HF_TOKEN` repository secret.
-3. **Vercel:** import this repo with **Root Directory = `frontend`**. `VITE_API_URL` is read from `frontend/.env.production`. Change it if your Space has a different URL, and update the CSP `connect-src` in `frontend/vercel.json` to match.
+2. **Render:** New > Blueprint, pick this repo. `render.yaml` creates the `heychat-api` Docker service (free plan). Enter `SUPABASE_SERVICE_ROLE_KEY` (Supabase > Project Settings > API keys) and `CORS_ORIGINS=https://<your-app>.vercel.app` when asked. Every push to `main` redeploys.
+3. **Vercel:** import this repo with **Root Directory = `frontend`**. `VITE_API_URL` is read from `frontend/.env.production`. Change it if your Render service has a different URL, and update the CSP `connect-src` in `frontend/vercel.json` to match.
 
-Free Hugging Face Spaces go to sleep after a long idle period. The first request after that wakes the server (up to a minute), and the sign-in page shows a message while it does.
+Render's free plan puts the API to sleep after 15 minutes without traffic. The first request after that wakes it (about a minute), and the sign-in page shows a message while it does. Hugging Face was the original target, but Docker Spaces now require a paid plan.
 
 ## API overview
 

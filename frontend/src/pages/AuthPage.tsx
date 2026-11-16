@@ -43,7 +43,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [busy, setBusy] = useState(false);
   const [waking, setWaking] = useState(false);
 
-  // Free Hugging Face Spaces sleep when idle: warm the API up while the user types.
+  // Free-tier servers sleep when idle: warm the API up while the user types.
   useEffect(() => {
     const slow = window.setTimeout(() => setWaking(true), 2500);
     fetch(`${API_URL}/health`)

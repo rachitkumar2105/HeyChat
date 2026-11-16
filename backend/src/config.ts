@@ -24,9 +24,12 @@ const EnvSchema = z.object({
   /** Optional regex for preview deployments, e.g. ^https://heychat-[a-z0-9-]+\.vercel\.app$ */
   CORS_ORIGIN_REGEX: z.string().optional(),
 
-  /** Public base URL of this API (used to build media links). HF sets SPACE_HOST automatically. */
+  /** Public base URL of this API (used to build media links). Render sets RENDER_EXTERNAL_URL. */
   PUBLIC_URL: z.url().optional(),
+  RENDER_EXTERNAL_URL: z.url().optional(),
   SPACE_HOST: z.string().optional(),
+  /** Number of reverse proxies in front of the app, for client IPs in rate limiting. */
+  TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(1),
 });
 
 export type Config = ReturnType<typeof loadConfig>;
@@ -54,7 +57,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     Buffer.from(hkdfSync('sha256', masterKey, 'heychat/v1', info, 32));
 
   const publicUrl =
-    e.PUBLIC_URL?.replace(/\/+$/, '') ??
+    (e.PUBLIC_URL ?? e.RENDER_EXTERNAL_URL)?.replace(/\/+$/, '') ??
     (e.SPACE_HOST ? `https://${e.SPACE_HOST}` : `http://localhost:${e.PORT}`);
 
   const corsOrigins = csv(e.CORS_ORIGINS);
@@ -64,6 +67,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     env: e.NODE_ENV,
     isProd,
     port: e.PORT,
+    trustProxy: e.TRUST_PROXY,
     logLevel: e.LOG_LEVEL,
     publicUrl,
     supabase:
