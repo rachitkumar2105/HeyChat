@@ -207,7 +207,7 @@ export function Logo({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
       <path d="M8 10a6 6 0 0 1 6-6h20a6 6 0 0 1 6 6v15a6 6 0 0 1-6 6H22l-8.5 7v-7H14a6 6 0 0 1-6-6V10Z" fill="var(--logo, var(--ink))" />
-      <path d="M16 17.5h2.2M20.2 13v9M24.4 10.5v14M28.6 14.5v6M32 17.5h.6" stroke="var(--marigold)" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M16 17.5h2.2M20.2 13v9M24.4 10.5v14M28.6 14.5v6M32 17.5h.6" stroke="var(--ochre)" strokeWidth="2.6" strokeLinecap="round" />
     </svg>
   );
 }

@@ -68,7 +68,7 @@ export function initials(name: string) {
 }
 
 /** Deterministic tone for initials avatars, drawn from the palette (no random neon). */
-const TONES = ['#2F5D8A', '#127C68', '#A3620A', '#7A4E8C', '#9C3D3D', '#3E6B2F', '#5A5F8F', '#8A5A2B'];
+const TONES = ['#4A6B5D', '#A0703A', '#7B5B4B', '#557A86', '#9A5B45', '#6B7F4A', '#5E6E5A', '#8A6E4B'];
 export function toneFor(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;

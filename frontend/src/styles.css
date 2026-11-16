@@ -1,37 +1,51 @@
-/* HeyChat: "ink and marigold". Warm paper surfaces, deep ink, one bright signal colour. */
+/* HeyChat: "Earthy & Serene". 60% soft cream (#FAF8F5), 30% sage (#4A6B5D), 10% warm ochre (#D9A05B). */
 
 :root {
-  --ink: #13261f;
-  --ink-2: #1d3a30;
-  --marigold: #f2a93b;
-  --marigold-deep: #c97c0c;
-  --paper: #f5efe3;
-  --surface: #fffcf5;
-  --surface-2: #f8f2e6;
-  --line: #e5dbc8;
-  --text: #17201c;
-  --muted: #687068;
-  --accent: #1f6e5a;
-  --accent-ink: #ffffff;
-  --mine: #1f5a4b;
-  --mine-text: #f5fbf8;
-  --mine-meta: #b9d6cc;
-  --peer: #fffcf5;
-  --peer-text: #17201c;
-  --danger: #b3412e;
-  --online: #2f9e6e;
-  --focus: #e08a00;
-  --chat-bg: #efe6d4;
-  --logo: var(--ink);
-  --active-row: #dfe9e2;
-  --mic: var(--ink-2);
-  --dot: rgb(19 38 31 / 0.06);
-  --shadow-1: 0 1px 0 rgb(19 38 31 / 0.06), 0 1px 3px rgb(19 38 31 / 0.08);
-  --shadow-2: 0 12px 32px rgb(19 38 31 / 0.16), 0 2px 6px rgb(19 38 31 / 0.08);
+  /* Earthy & Serene. 60% soft cream, 30% sage, 10% warm ochre. */
+  --cream: #faf8f5;
+  --sage: #4a6b5d;
+  --sage-deep: #3b5649;
+  --ochre: #d9a05b;
+  --ochre-deep: #8e6326;
+  --ochre-soft: #f5e9d7;
+  --on-ochre: #2b2116;
+  --on-sage: #faf8f5;
+
+  --ink: #2f4a3e;
+  --ink-2: var(--sage-deep);
+  --paper: var(--cream);
+  --surface: #fffdfa;
+  --surface-2: #f2eee8;
+  --line: #e5ded3;
+  --text: #25302b;
+  --muted: #6c736d;
+  --accent: var(--sage);
+  --accent-ink: var(--on-sage);
+  --mine: var(--sage);
+  --mine-text: var(--on-sage);
+  --mine-meta: #d3dfd8;
+  --mine-tick-read: #f0c88f;
+  --peer: #fffdfa;
+  --peer-text: #25302b;
+  --danger: #b5523b;
+  --online: #5e9c6f;
+  --focus: var(--sage);
+  --chat-bg: #f3efe8;
+  --logo: var(--sage);
+  --active-row: #e4ece7;
+  --mic: var(--sage-deep);
+  --hero-bg: var(--sage);
+  --hero-text: var(--cream);
+  --hero-muted: #dce6e0;
+  --hero-peer: rgb(250 248 245 / 0.16);
+  --dot: rgb(74 107 93 / 0.07);
+  --shadow-1: 0 1px 0 rgb(47 74 62 / 0.05), 0 1px 3px rgb(47 74 62 / 0.08);
+  --shadow-2: 0 12px 32px rgb(47 74 62 / 0.16), 0 2px 6px rgb(47 74 62 / 0.08);
   --radius: 14px;
   --radius-sm: 10px;
-  --font-body: 'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Bricolage Grotesque Variable', var(--font-body);
+  /* One variable family for everything: a single font file, weights tuned per role. */
+  --font-body: 'Plus Jakarta Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: var(--font-body);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --t-fast: 120ms;
   --t-med: 220ms;
@@ -41,25 +55,29 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #0b1512;
-    --ink-2: #13241e;
-    --paper: #0f1714;
-    --surface: #16201c;
-    --surface-2: #1b2722;
-    --line: #26342e;
-    --text: #e8ede9;
-    --muted: #93a099;
-    --accent: #3a9c80;
-    --mine: #23594b;
-    --mine-text: #eef7f3;
-    --mine-meta: #a6cbbd;
-    --peer: #1d2925;
-    --peer-text: #e8ede9;
-    --danger: #e0715c;
-    --chat-bg: #111b17;
-    --logo: #e8ede9;
-    --active-row: #1f3a31;
-    --mic: #2e7d68;
+    --ink: #0f1412;
+    --ink-2: #2e4539;
+    --ochre-deep: #e2b47a;
+    --ochre-soft: #352c20;
+    --paper: #141917;
+    --surface: #1b211e;
+    --surface-2: #222a26;
+    --line: #2d3732;
+    --text: #eaefeb;
+    --muted: #9aa59e;
+    --accent: #5b7f6f;
+    --mine: #3f5d50;
+    --mine-text: #f2f5f2;
+    --mine-meta: #bfd0c7;
+    --peer: #232b27;
+    --peer-text: #eaefeb;
+    --danger: #e0806a;
+    --focus: var(--ochre);
+    --chat-bg: #121715;
+    --logo: #e9eeea;
+    --active-row: #26352e;
+    --mic: var(--sage);
+    --hero-bg: #2e4539;
     --dot: rgb(255 255 255 / 0.035);
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-2: 0 12px 32px rgb(0 0 0 / 0.5);
@@ -83,7 +101,8 @@ body {
   margin: 0;
   font-family: var(--font-body);
   font-size: 15px;
-  line-height: 1.45;
+  font-weight: 450;
+  line-height: 1.5;
   color: var(--text);
   background: var(--paper);
   -webkit-font-smoothing: antialiased;
@@ -95,8 +114,9 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
+  font-weight: 750;
   line-height: 1.15;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -377,8 +397,8 @@ img {
   position: relative;
   overflow: hidden;
   padding: 28px 24px 32px;
-  background: var(--ink);
-  color: #f3efe6;
+  background: var(--hero-bg);
+  color: var(--hero-text);
   display: grid;
   gap: 14px;
   align-content: start;
@@ -390,7 +410,7 @@ img {
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle at center, rgb(242 169 59 / 0.22), transparent 62%);
+  background: radial-gradient(circle at center, rgb(217 160 91 / 0.3), transparent 62%);
   pointer-events: none;
 }
 .auth-hero h1 {
@@ -399,7 +419,7 @@ img {
   font-weight: 700;
 }
 .auth-hero p {
-  color: #c9d3cc;
+  color: var(--hero-muted);
   max-width: 44ch;
 }
 .brand {
@@ -413,8 +433,8 @@ img {
   text-decoration: none;
 }
 .brand-light {
-  color: #f3efe6;
-  --logo: #f3efe6;
+  color: var(--hero-text);
+  --logo: var(--cream);
 }
 .auth-panel {
   display: grid;
@@ -455,13 +475,13 @@ img {
 }
 .demo-peer {
   justify-self: start;
-  background: #22382f;
+  background: var(--hero-peer);
   border-bottom-left-radius: 6px;
 }
 .demo-mine {
   justify-self: end;
-  background: var(--marigold);
-  color: #20190c;
+  background: var(--ochre);
+  color: var(--on-ochre);
   border-bottom-right-radius: 6px;
 }
 .demo-voice {
@@ -475,15 +495,15 @@ img {
   height: 26px;
 }
 .demo-voice .wave-bar {
-  background: rgb(32 25 12 / 0.35);
+  background: rgb(43 33 22 / 0.35);
 }
 .demo-voice .wave-bar.is-played {
-  background: #20190c;
+  background: var(--on-ochre);
 }
 .demo-play {
   width: 0;
   height: 0;
-  border-left: 11px solid #20190c;
+  border-left: 11px solid var(--on-ochre);
   border-top: 7px solid transparent;
   border-bottom: 7px solid transparent;
   margin-left: 4px;
@@ -602,14 +622,14 @@ img {
   margin: 0 12px 8px;
   padding: 9px 12px;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--marigold) 18%, var(--surface));
+  background: var(--ochre-soft);
   font-size: 13.5px;
 }
 .conn-banner .spinner {
   width: 14px;
   height: 14px;
   border-width: 2px;
-  color: var(--marigold-deep);
+  color: var(--ochre-deep);
 }
 .search {
   display: flex;
@@ -695,7 +715,7 @@ img {
   font-variant-numeric: tabular-nums;
 }
 .chat-item-top time.has-unread {
-  color: var(--marigold-deep);
+  color: var(--ochre-deep);
   font-weight: 600;
 }
 .preview {
@@ -725,8 +745,8 @@ img {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--marigold);
-  color: #2a1d06;
+  background: var(--ochre);
+  color: var(--on-ochre);
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -821,7 +841,7 @@ img {
   top: 88px;
   width: 70px;
   height: 26px;
-  background: var(--marigold);
+  background: var(--ochre);
   border-bottom-left-radius: 6px;
   animation-delay: -3.2s;
 }
@@ -911,7 +931,7 @@ img {
   margin: 12px auto 16px;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--marigold) 20%, var(--surface));
+  background: var(--ochre-soft);
   color: var(--text);
   font-size: 13px;
   text-align: center;
@@ -940,8 +960,8 @@ img {
 .unread-divider span {
   padding: 4px 12px;
   border-radius: 999px;
-  background: var(--marigold);
-  color: #2a1d06;
+  background: var(--ochre);
+  color: var(--on-ochre);
   font-size: 12px;
   font-weight: 700;
 }
@@ -997,7 +1017,7 @@ img {
 @keyframes flash {
   20%,
   60% {
-    box-shadow: 0 0 0 3px var(--marigold);
+    box-shadow: 0 0 0 3px var(--ochre);
   }
 }
 .bubble-text {
@@ -1009,7 +1029,7 @@ img {
   text-decoration: underline;
 }
 .bubble-mine .bubble-text a {
-  color: #ffe2b0;
+  color: #f6ddb8;
 }
 .bubble-deleted {
   background: transparent;
@@ -1049,7 +1069,7 @@ img {
   color: inherit;
 }
 .tick-read {
-  color: var(--marigold);
+  color: var(--mine-tick-read);
 }
 .bubble-more {
   position: absolute;
@@ -1081,7 +1101,7 @@ img {
   width: 100%;
   margin: 2px 0 6px;
   padding: 6px 10px;
-  border-left: 3px solid var(--marigold);
+  border-left: 3px solid var(--ochre);
   border-radius: 8px;
   background: rgb(0 0 0 / 0.07);
   text-align: left;
@@ -1092,10 +1112,10 @@ img {
 }
 .quote-who {
   font-weight: 700;
-  color: var(--marigold-deep);
+  color: var(--ochre-deep);
 }
 .bubble-mine .quote-who {
-  color: var(--marigold);
+  color: var(--mine-tick-read);
 }
 .quote-text {
   display: flex;
@@ -1145,7 +1165,7 @@ img {
 .photo-progress span {
   display: block;
   height: 100%;
-  background: var(--marigold);
+  background: var(--ochre);
   transition: width var(--t-med) var(--ease);
 }
 
@@ -1251,8 +1271,8 @@ img {
   height: 20px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--marigold);
-  color: #2a1d06;
+  background: var(--ochre);
+  color: var(--on-ochre);
   font-size: 11px;
   font-weight: 700;
   display: grid;
@@ -1278,8 +1298,8 @@ img {
   color: #fff;
 }
 .voice-mine .voice-play {
-  background: var(--marigold);
-  color: #2a1d06;
+  background: var(--ochre);
+  color: var(--on-ochre);
 }
 .voice-body {
   flex: 1;
@@ -1384,7 +1404,7 @@ img {
   margin: 8px 10px 0;
   padding: 8px 4px 8px 12px;
   border-radius: var(--radius-sm);
-  border-left: 3px solid var(--marigold);
+  border-left: 3px solid var(--ochre);
   background: var(--surface-2);
   color: var(--muted);
   animation: pop-in 180ms var(--ease);
@@ -1508,7 +1528,7 @@ img {
   transform: scale(1.15);
 }
 .quick-reactions .is-picked {
-  background: color-mix(in srgb, var(--marigold) 35%, transparent);
+  background: color-mix(in srgb, var(--ochre) 35%, transparent);
 }
 
 /* ---------------------------------------------------------------- dialog */
@@ -1526,7 +1546,7 @@ img {
   animation: dialog-in 220ms var(--ease);
 }
 .dialog::backdrop {
-  background: rgb(10 20 16 / 0.55);
+  background: rgb(37 48 43 / 0.5);
   backdrop-filter: blur(2px);
 }
 @keyframes dialog-in {
@@ -1590,7 +1610,7 @@ img {
   border-radius: 10px;
 }
 .viewer-open {
-  color: var(--marigold);
+  color: var(--ochre);
   font-size: 14px;
 }
 .profile-card {
@@ -1719,8 +1739,8 @@ img {
 .toast {
   padding: 12px 16px;
   border-radius: var(--radius);
-  background: var(--ink);
-  color: #f3efe6;
+  background: var(--sage-deep);
+  color: var(--on-sage);
   box-shadow: var(--shadow-2);
   font-size: 14px;
   animation: pop-in 220ms var(--ease);
