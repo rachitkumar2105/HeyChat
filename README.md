@@ -2,6 +2,9 @@
 
 A real-time, one-to-one messenger for text, photos and voice notes. It works on phones, tablets and desktops.
 
+**Live:** [hey-chat-three.vercel.app](https://hey-chat-three.vercel.app) · API: [heychat-api.onrender.com/health](https://heychat-api.onrender.com/health)
+(free tier: the API sleeps after 15 idle minutes and takes about a minute to wake)
+
 - **Frontend:** React 19 + TypeScript + Vite, deployed on Vercel. Earthy palette (cream #FAF8F5, sage #4A6B5D, ochre #D9A05B), Plus Jakarta Sans variable font
 - **Backend:** Node.js + Express 5 + Socket.IO + TypeScript, deployed as a Docker web service on Render
 - **Data:** Supabase Postgres (all logic in SQL functions) and Supabase Storage (private bucket)
